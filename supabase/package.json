@@ -1,0 +1,8 @@
+{
+  "name": "supabase-workspace",
+  "private": true,
+  "description": "Supabase CLI migrations, Edge Functions, and local config for this repo.",
+  "scripts": {
+    "types": "supabase gen types typescript --local --schema public > ../src/types/database.types.ts"
+  }
+}

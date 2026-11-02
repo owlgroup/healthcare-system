@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "lib": ["deno.window"]
+  },
+  "imports": {
+    "npm:@supabase/supabase-js@2.49.1": "npm:@supabase/supabase-js@2.49.1",
+    "npm:nodemailer@6.9.13": "npm:nodemailer@6.9.13"
+  }
+}

@@ -1,0 +1,142 @@
+# Supabase local configuration (adjust project_id when linking remote)
+# Docs: https://supabase.com/docs/guides/cli/config
+
+project_id = "responsive-web-app"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "https://healthcare-system-ns.vercel.app"
+additional_redirect_urls = [
+  "https://healthcare-system-ns.vercel.app",
+  "https://healthcare-system-ns.vercel.app/auth/callback",
+  "https://healthcare-system-ns.vercel.app/auth/set-password",
+  "http://localhost:8080",
+  "http://localhost:8080/auth/callback",
+  "http://localhost:8080/auth/set-password",
+  "http://localhost:5173",
+  "http://localhost:5173/auth/callback",
+  "http://localhost:5173/auth/set-password",
+  "http://localhost:5190",
+  "http://localhost:5190/auth/callback",
+  "http://localhost:5190/auth/set-password",
+  "https://localhost:5173",
+  "https://localhost:5173/auth/callback",
+  "https://localhost:5173/auth/set-password",
+]
+enable_signup = true
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+
+[auth.hook.custom_access_token]
+enabled = true
+uri = "pg-functions://postgres/public/custom_access_token_hook"
+
+# Local only — GoTrue in Docker calls the edge function on the host.
+# On hosted, enable Send Email hook in Auth settings with the deployed function URL.
+# Dummy HMAC is for local docker; hosted must use the dashboard-generated secret.
+[auth.hook.send_email]
+enabled = true
+uri = "http://host.docker.internal:54321/functions/v1/auth-send-email"
+secrets = "v1,whsec_bG9jYWwtZGV2LXNlbmQtZW1haWwtaG9vay1zZWNyZXQtMzJieXRlcw=="
+
+[auth.email]
+enable_signup = true
+# OTP 6 số qua signInWithOtp (client), không dùng link Confirm signup
+enable_confirmations = false
+otp_length = 6
+# Link email (mời nhân viên / đặt lại mật khẩu) — 24 giờ cho UAT
+otp_expiry = 86400
+
+[auth.email.template.recovery]
+subject = "Thiết lập mật khẩu — Rcare Plus"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.invite]
+subject = "Mời tham gia Rcare Plus"
+content_path = "./supabase/templates/invite.html"
+
+[auth.email.template.confirmation]
+subject = "Xác nhận email — Rcare Plus"
+content_path = "./supabase/templates/confirmation.html"
+
+[functions.auth-send-email]
+verify_jwt = false
+
+[functions.signup-send-otp]
+verify_jwt = false
+
+[functions.signup-verify-otp]
+verify_jwt = false
+
+[functions.signup-complete]
+verify_jwt = false
+
+[functions.forgot-password-send-otp]
+verify_jwt = false
+
+[functions.forgot-password-verify-otp]
+verify_jwt = false
+
+[functions.reset-password-complete]
+verify_jwt = false
+
+[functions.portal-login]
+verify_jwt = false
+
+[functions.portal-logout]
+verify_jwt = false
+
+[functions.admin-mfa-verify]
+verify_jwt = false
+
+[functions.notify-appointment-cancelled]
+verify_jwt = true
+
+[functions.notify-pre-consult-reminder]
+verify_jwt = true
+
+[functions.scan-pre-consult-reminders]
+verify_jwt = false
+
+[functions.patient-dob-verify]
+verify_jwt = true
+
+[functions.patient-dob-status]
+verify_jwt = true
+
+[functions.patient-dob-login]
+verify_jwt = false
+
+[functions.patient-change-password]
+verify_jwt = true
+
+[functions.patient-mfa-enroll]
+verify_jwt = true
+
+[functions.patient-mfa-verify]
+verify_jwt = true

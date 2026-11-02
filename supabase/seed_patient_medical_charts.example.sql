@@ -1,0 +1,48 @@
+-- Chạy trên Supabase SQL Editor sau khi migration `patient_medical_charts` đã áp.
+-- Thay '<patient-auth-user-uuid>' bằng UUID thật từ auth.users (Authentication → Users).
+
+insert into public.patient_medical_charts (
+  patient_user_id,
+  display_patient_id,
+  full_name,
+  pronouns,
+  date_of_birth,
+  status,
+  last_visit_label,
+  blood_type,
+  height_cm,
+  weight_kg,
+  diagnoses,
+  medications,
+  allergies,
+  clinical_note,
+  heart_rate_bpm,
+  temperature_f,
+  blood_pressure_systolic,
+  blood_pressure_diastolic,
+  recent_labs,
+  emergency_contact_name,
+  emergency_contact_phone
+) values (
+  '<patient-auth-user-uuid>'::uuid,
+  'QC-2024-8842',
+  'Alex Rivera',
+  'He/Him',
+  '1994-12-05',
+  'Stable',
+  '2 days ago',
+  'O+',
+  182,
+  78,
+  '["Type 2 Diabetes", "Mild Hypertension"]'::jsonb,
+  '["Metformin 500mg", "Lisinopril 10mg"]'::jsonb,
+  '["Penicillin", "Peanuts"]'::jsonb,
+  null,
+  72,
+  98.6,
+  118,
+  76,
+  '[{"name":"Blood Panel","date":"2024-01-12"},{"name":"Chest X-Ray","date":"2023-12-28"}]'::jsonb,
+  'Elena Rivera',
+  '305-555-0100'
+);
