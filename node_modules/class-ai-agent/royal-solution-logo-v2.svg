@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 200" width="520" height="200">
+  <defs>
+    <linearGradient id="nodeGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4a9be8"/>
+      <stop offset="100%" stop-color="#2d6fd4"/>
+    </linearGradient>
+    <linearGradient id="nodeGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2d6fd4"/>
+      <stop offset="100%" stop-color="#1a4fa0"/>
+    </linearGradient>
+    <linearGradient id="nodeGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a3a7a"/>
+      <stop offset="100%" stop-color="#0f2654"/>
+    </linearGradient>
+    <linearGradient id="goldAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d4a843"/>
+      <stop offset="100%" stop-color="#f0c75e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- === ASCENDING NODES ICON === -->
+  <g transform="translate(55, 100)">
+    <!-- Dashed connection lines -->
+    <line x1="-20" y1="30" x2="5" y2="8" stroke="#a3c8ee" stroke-width="1.8" stroke-dasharray="4,3" opacity="0.7"/>
+    <line x1="5" y1="8" x2="35" y2="-22" stroke="#7baee5" stroke-width="1.8" stroke-dasharray="4,3" opacity="0.7"/>
+    <line x1="-20" y1="30" x2="35" y2="-22" stroke="#5a94d8" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5"/>
+
+    <!-- Node 1 (smallest, bottom-left) -->
+    <circle cx="-20" cy="30" r="10" fill="url(#nodeGrad1)" opacity="0.85"/>
+    <circle cx="-20" cy="30" r="5.5" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.5"/>
+
+    <!-- Node 2 (medium, middle) -->
+    <circle cx="5" cy="8" r="14" fill="url(#nodeGrad2)" opacity="0.9"/>
+    <circle cx="5" cy="8" r="8" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.5"/>
+
+    <!-- Node 3 (largest, top-right) -->
+    <circle cx="35" cy="-22" r="20" fill="url(#nodeGrad3)"/>
+    <circle cx="35" cy="-22" r="12" fill="none" stroke="#fff" stroke-width="2" opacity="0.4"/>
+    <circle cx="35" cy="-22" r="6" fill="#2d6fd4" opacity="0.6"/>
+
+    <!-- Crown accent on top node -->
+    <polygon points="27,-46 31,-38 35,-42 39,-38 43,-46" fill="url(#goldAccent)" opacity="0.95"/>
+    <!-- Three crown dots -->
+    <circle cx="27" cy="-47.5" r="1.5" fill="#f0c75e"/>
+    <circle cx="35" cy="-43.5" r="1.5" fill="#f0c75e"/>
+    <circle cx="43" cy="-47.5" r="1.5" fill="#f0c75e"/>
+  </g>
+
+  <!-- === COMPANY NAME === -->
+  <text x="135" y="88" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="42" font-weight="700" fill="#1a3a7a" letter-spacing="2">ROYAL</text>
+  <text x="135" y="128" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="40" font-weight="300" fill="#2d6fd4" letter-spacing="6">SOLUTION</text>
+
+  <!-- Gold accent line -->
+  <rect x="135" y="140" width="90" height="2.5" rx="1.25" fill="url(#goldAccent)"/>
+
+  <!-- Tagline -->
+  <text x="135" y="163" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="10.5" fill="#7a8aaa" letter-spacing="3.5" font-weight="400">TECHNOLOGY SOLUTIONS</text>
+</svg>
