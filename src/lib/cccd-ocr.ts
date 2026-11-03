@@ -1,3 +1,4 @@
+import { getEnv } from "@/lib/env";
 /** OCR service for Vietnamese CCCD (Citizen ID). */
 
 import type { OnboardingFormData } from "@/hooks/useOnboardingForm";
@@ -111,13 +112,13 @@ export function checkBhytOcrQuality(response: BhytOcrResponse): OcrQualityResult
 }
 
 function getOcrBaseUrl(): string {
-  const raw = import.meta.env.VITE_OCR_CCCD_URL;
+  const raw = getEnv("VITE_OCR_CCCD_URL");
   const base = (typeof raw === "string" && raw.trim() ? raw.trim() : "http://localhost:3000").replace(/\/$/, "");
   return base;
 }
 
 function getOcrServiceUrl(): string {
-  const raw = import.meta.env.VITE_OCR_SERVICE_URL;
+  const raw = getEnv("VITE_OCR_SERVICE_URL");
   return (typeof raw === "string" && raw.trim() ? raw.trim() : "https://ocr.187-127-103-1.nip.io").replace(/\/$/, "");
 }
 

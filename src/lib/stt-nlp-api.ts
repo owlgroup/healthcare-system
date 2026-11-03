@@ -1,3 +1,4 @@
+import { getEnv } from "@/lib/env";
 /**
  * Healthcare STT — Module 5/6 Backend client
  * Swagger: https://healthcare.187-127-103-1.nip.io/docs
@@ -6,7 +7,7 @@
 const DEFAULT_BASE_URL = 'https://healthcare.187-127-103-1.nip.io';
 
 export function getSttApiBaseUrl(): string {
-  const raw = import.meta.env.VITE_STT_API_URL;
+  const raw = getEnv("VITE_STT_API_URL");
   return (raw?.trim() || DEFAULT_BASE_URL).replace(/\/$/, '');
 }
 

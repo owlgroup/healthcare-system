@@ -12,19 +12,8 @@ RUN npm ci --legacy-peer-deps
 # Copy source code
 COPY . .
 
-# Build arguments (passed at build time)
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_ANON_KEY
-ARG VITE_SITE_URL
-ARG VITE_STT_API_URL
-ARG VITE_ENCRYPTION_SECRET_KEY
-ARG RESEND_API_KEY
-ARG SIGNUP_EMAIL_FROM
-ARG SUPABASE_SERVICE_ROLE_KEY
-ARG SMTP_USER
-ARG SMTP_PASS
-ARG EMAIL_FROM_NAME
-ARG SITE_URL
+# NOTE: no .env / build args — VITE_* config is injected at container start
+# (docker/env-config.sh -> /env-config.js). See .dockerignore.
 
 # Build the app
 RUN npm run build
@@ -39,6 +28,10 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built assets from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Generate /env-config.js from container VITE_* env on every start
+COPY docker/env-config.sh /docker-entrypoint.d/40-env-config.sh
+RUN chmod +x /docker-entrypoint.d/40-env-config.sh
 
 # Add healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

@@ -1,3 +1,4 @@
+import { getEnv } from "@/lib/env";
 /**
  * Profile OTP API - Send and verify OTP for unlocking sensitive profile data
  */
@@ -5,10 +6,10 @@
 import { fetchWithAuthRetry, getAccessTokenOrRefresh } from '@/lib/auth-refresh';
 
 function functionsBaseUrl(): string {
-  const override = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
+  const override = getEnv("VITE_SUPABASE_FUNCTIONS_URL");
   if (override) return (override as string).replace(/\/$/, '');
 
-  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const url = getEnv("VITE_SUPABASE_URL") as string | undefined;
   if (!url) throw new Error('VITE_SUPABASE_URL is not configured');
   return `${url.replace(/\/$/, '')}/functions/v1`;
 }

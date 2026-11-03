@@ -1,0 +1,10 @@
+# Never send env/secrets into the image — config is injected at runtime
+.env
+.env.*
+!.env.example
+
+node_modules
+dist
+test-results
+playwright-report
+.git
