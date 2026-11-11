@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   LayoutGrid, CalendarDays, FileUser, Shield, LogOut, Menu, Loader2, Database, Users,
+  ClipboardList, KeyRound, ScrollText,
 } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { toast } from "sonner";
@@ -16,6 +17,11 @@ const sidebarItems = [
   { icon: Users, label: "Bệnh nhân (module BS)", path: "/customer-portal/patients" },
   { icon: CalendarDays, label: "Lịch hẹn", path: "/customer-portal/appointments" },
   { icon: Database, label: "Danh mục", path: "/customer-portal/master-data" },
+  { icon: ClipboardList, label: "Bộ câu hỏi lâm sàng", path: "/customer-portal/question-library" },
+  { icon: Users, label: "Người dùng", path: "/customer-portal/users" },
+  { icon: KeyRound, label: "Danh sách quyền", path: "/customer-portal/permissions" },
+  { icon: Shield, label: "Quản lý vai trò", path: "/customer-portal/roles" },
+  { icon: ScrollText, label: "Nhật ký thay đổi", path: "/customer-portal/delta-log" },
 ];
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -125,7 +131,6 @@ const CustomerLayout = () => {
                 />
               </SheetContent>
             </Sheet>
-            <p className="text-sm font-semibold text-foreground">Portal Nhân viên</p>
             {permsLoading && (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-hidden="true" />
             )}

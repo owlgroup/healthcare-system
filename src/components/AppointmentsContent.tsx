@@ -4,6 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import {
   Calendar,
+  CalendarClock,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -27,6 +28,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import RescheduleAppointmentDialog from '@/components/patient/RescheduleAppointmentDialog';
 import {
   fetchMyAppointmentsPaginated,
   cancelAppointment,
@@ -53,6 +55,7 @@ export default function AppointmentsContent() {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
+  const [rescheduling, setRescheduling] = useState<Appointment | null>(null);
   const [activeTab, setActiveTab] = useState<AppointmentTabType>('upcoming');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -180,6 +183,7 @@ export default function AppointmentsContent() {
                       tab={activeTab}
                       cancelling={cancelling === apt.id}
                       onCancel={() => setPendingCancelId(apt.id)}
+                      onReschedule={() => setRescheduling(apt)}
                       onRebook={() => void handleBookClick()}
                     />
                   ))
@@ -227,6 +231,15 @@ export default function AppointmentsContent() {
           )}
         </div>
       </div>
+
+      <RescheduleAppointmentDialog
+        appointment={rescheduling}
+        onClose={() => setRescheduling(null)}
+        onRescheduled={() => {
+          setRescheduling(null);
+          void fetchAppointments(activeTab, currentPage);
+        }}
+      />
 
       {/* Cancel Dialog */}
       <AlertDialog
@@ -297,12 +310,14 @@ function AppointmentCard({
   tab,
   cancelling,
   onCancel,
+  onReschedule,
   onRebook,
 }: {
   apt: Appointment;
   tab: TabType;
   cancelling: boolean;
   onCancel: () => void;
+  onReschedule: () => void;
   onRebook: () => void;
 }) {
   const dateLabel = apt.slot_date
@@ -386,6 +401,16 @@ function AppointmentCard({
 
         {/* Right actions */}
         <div className="flex flex-col gap-2 lg:min-w-[160px]">
+          {tab === 'upcoming' && apt.status === 'CONFIRMED' && (
+            <button
+              onClick={onReschedule}
+              disabled={cancelling}
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-semibold bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 transition-colors disabled:opacity-50"
+            >
+              <CalendarClock className="h-4 w-4" />
+              Đổi lịch hẹn
+            </button>
+          )}
           {tab === 'upcoming' && apt.status === 'CONFIRMED' && (
             <button
               onClick={onCancel}

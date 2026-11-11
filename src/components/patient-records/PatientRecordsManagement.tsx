@@ -55,12 +55,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  canReviewPatientProfile,
   mapPatientRecordDeleteError,
   searchPatientRecords,
   type PatientRecordSortField,
   type PatientRecordStatusFilter,
   type PatientRecordsListParams,
 } from "@/lib/patient-records";
+import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/lib/supabase";
 import {
   formatCreatedByRole,
@@ -119,7 +121,6 @@ const STATUS_TABS: { value: PatientRecordStatusFilter; label: string; dot: strin
   { value: "all", label: "Tất cả", dot: "bg-[#9A928D]" },
   { value: "active", label: "Đang hoạt động", dot: "bg-[#22A55A]" },
   { value: "unverified", label: "Đã nộp", dot: "bg-[#1D4FD8]" },
-  { value: "draft", label: "Bản nháp", dot: "bg-[#E3A21A]" },
   { value: "inactive", label: "Ngừng hoạt động", dot: "bg-[#7A726D]" },
   { value: "rejected", label: "Đã từ chối", dot: "bg-primary" },
 ];
@@ -221,6 +222,7 @@ type PatientRecordsManagementProps = {
 };
 
 const PatientRecordsManagement = ({ portal }: PatientRecordsManagementProps) => {
+  const { role } = useAuth();
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filters, setFilters] = useState<PatientRecordsFilters>(DEFAULT_FILTERS);
@@ -769,7 +771,7 @@ const PatientRecordsManagement = ({ portal }: PatientRecordsManagementProps) => 
           open={editOpen}
           onClose={() => setEditOpen(false)}
           onSuccess={() => void refreshAll()}
-          canReview={portal === "admin"}
+          canReview={canReviewPatientProfile(role)}
         />
 
         <AdminNewPatientDialog

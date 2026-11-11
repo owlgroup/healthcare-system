@@ -45,6 +45,7 @@ import MedicationsStep from './steps/MedicationsStep';
 import AllergiesStep from './steps/AllergiesStep';
 import LifestyleStep from './steps/LifestyleStep';
 import BookingIntakeForm, { type IntakeFormData } from '@/components/patient/booking/BookingIntakeForm';
+import { mapBookingIntakeToInput } from '@/lib/booking-intake-mapper';
 
 export default function PreConsultationForm() {
   const { appointmentId } = useParams<{ appointmentId: string }>();
@@ -83,12 +84,7 @@ export default function PreConsultationForm() {
 
   // Handle simplified booking intake form submission
   async function handleBookingIntakeSubmit(data: IntakeFormData) {
-    form.updateField('chief_complaint', data.chief_complaint);
-    form.updateField('symptom_duration', data.symptom_duration);
-    form.updateField('pain_level', data.pain_level);
-    form.updateField('current_medications', data.current_medications);
-    form.updateField('allergies', data.allergies);
-    await form.submit();
+    await form.submitWithData(mapBookingIntakeToInput(data));
   }
 
   // Loading state

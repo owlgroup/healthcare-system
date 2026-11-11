@@ -39,7 +39,7 @@ export type PatientPortalDetail = {
   submitted_at: string | null;
   updated_at: string | null;
   consent_accepted: boolean;
-  /** DB `patient.status`: DRAFT | UNVERIFIED | ACTIVE | INACTIVE | REJECTED */
+  /** DB `patient.status`: UNVERIFIED | ACTIVE | INACTIVE | REJECTED */
   status: PatientProfileStatus;
   rejection_reason?: string | null;
 };
@@ -47,7 +47,7 @@ export type PatientPortalDetail = {
 /** Who created the patient profile (DB `patient.created_by_role`). */
 export type PatientCreatedByRole = "patient" | "doctor" | "nurse" | "admin";
 
-export type PatientProfileStatus = "DRAFT" | "UNVERIFIED" | "ACTIVE" | "INACTIVE" | "REJECTED";
+export type PatientProfileStatus = "UNVERIFIED" | "ACTIVE" | "INACTIVE" | "REJECTED";
 
 /** Row for staff patient-records table */
 export type PatientRecordListRow = {
@@ -64,6 +64,8 @@ export type PatientRecordListRow = {
   updated_at: string | null;
   status: string;
   created_by_role: PatientCreatedByRole | null;
+  preferred_pronouns: string | null;
+  bhyt_gender: string | null;
 };
 
 export function formatCreatedByRole(role: PatientCreatedByRole | null | undefined): string {
@@ -93,13 +95,12 @@ export function parsePatientProfileStatus(value: unknown): PatientProfileStatus 
   if (
     raw === "ACTIVE" ||
     raw === "UNVERIFIED" ||
-    raw === "DRAFT" ||
     raw === "INACTIVE" ||
     raw === "REJECTED"
   ) {
     return raw;
   }
-  return "DRAFT";
+  return "UNVERIFIED";
 }
 
 export type PatientListItem = {
@@ -199,6 +200,8 @@ export function mapPatientRecordListRow(row: Record<string, unknown>): PatientRe
     updated_at: row.updated_at != null ? String(row.updated_at) : null,
     status: formatPatientProfileStatus(parsePatientProfileStatus(row.status)),
     created_by_role: parseCreatedByRole(row.created_by_role),
+    preferred_pronouns: row.preferred_pronouns != null ? String(row.preferred_pronouns) : null,
+    bhyt_gender: row.bhyt_gender != null ? String(row.bhyt_gender) : null,
   };
 }
 

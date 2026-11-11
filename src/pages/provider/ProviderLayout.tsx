@@ -99,6 +99,10 @@ const ProviderLayout = () => {
         walkIn: n.walkIn,
         createdAt: n.createdAt,
         read: n.read,
+        kind: n.kind,
+        previousSlotDate: n.previousSlotDate,
+        previousStartTime: n.previousSlotTime,
+        reason: n.reason,
       })),
     [notifications],
   );
@@ -221,6 +225,7 @@ const ProviderLayout = () => {
                   onMarkAsRead={(id) => { void markAsRead(id); }}
                   onClearAll={clearAll}
                   appointmentsPath="/provider-portal/appointments"
+                  examinationPath="/provider-portal/examination/:id"
                 />
                 <Link
                   to="/provider-portal/profile"

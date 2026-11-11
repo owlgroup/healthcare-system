@@ -19,9 +19,15 @@ function playDing() {
   } catch { /* no user gesture */ }
 }
 
+export type NotificationKind = "NEW_APPOINTMENT" | "RESCHEDULED";
+
 export type DoctorNotification = {
   id: string;
   appointmentId: string | null;
+  kind: NotificationKind;
+  previousSlotDate: string | null;
+  previousSlotTime: string | null;
+  reason: string | null;
   patientName: string;
   specialtyName: string;
   slotDate: string | null;
@@ -34,6 +40,10 @@ export type DoctorNotification = {
 type DbRow = {
   id: string;
   appointment_id: string | null;
+  kind: NotificationKind | null;
+  previous_slot_date: string | null;
+  previous_slot_time: string | null;
+  reason: string | null;
   patient_name: string | null;
   specialty_name: string | null;
   slot_date: string | null;
@@ -47,6 +57,10 @@ function toNotification(row: DbRow): DoctorNotification {
   return {
     id: row.id,
     appointmentId: row.appointment_id,
+    kind: row.kind ?? "NEW_APPOINTMENT",
+    previousSlotDate: row.previous_slot_date ?? null,
+    previousSlotTime: row.previous_slot_time ?? null,
+    reason: row.reason ?? null,
     patientName: row.patient_name ?? "Bệnh nhân",
     specialtyName: row.specialty_name ?? "—",
     slotDate: row.slot_date,

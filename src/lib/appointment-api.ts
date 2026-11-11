@@ -82,6 +82,46 @@ export async function cancelAppointment(appointmentId: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+export type RescheduleSlot = {
+  slot_id: string;
+  slot_date: string;
+  start_time: string;
+  end_time: string;
+};
+
+export async function fetchRescheduleSlots(
+  appointmentId: string,
+  from: Date,
+  to: Date,
+): Promise<RescheduleSlot[]> {
+  const { data, error } = await supabase.rpc('patient_reschedule_slots', {
+    p_appointment_id: appointmentId,
+    p_from: format(from, 'yyyy-MM-dd'),
+    p_to: format(to, 'yyyy-MM-dd'),
+  });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as RescheduleSlot[];
+}
+
+export async function rescheduleAppointment({
+  appointmentId,
+  newSlotId,
+  reason,
+}: {
+  appointmentId: string;
+  newSlotId: string;
+  reason: string;
+}): Promise<void> {
+  const { error } = await supabase.rpc('patient_reschedule_appointment', {
+    p_appointment_id: appointmentId,
+    p_new_slot_id: newSlotId,
+    p_reason: reason,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
 export async function fetchMyAppointments(): Promise<Appointment[]> {
   const { data, error } = await supabase
     .from('appointments')
@@ -240,5 +280,17 @@ export function mapBookingError(message: string): string {
     return 'Vui lòng gọi hotline để hủy lịch sát giờ (dưới 2 tiếng trước giờ khám).';
   if (message.includes('CANNOT_CANCEL'))
     return 'Lịch hẹn này không thể hủy.';
+  if (message.includes('TOO_LATE_TO_RESCHEDULE'))
+    return 'Vui lòng gọi hotline để đổi lịch sát giờ (dưới 2 tiếng trước giờ khám).';
+  if (message.includes('CANNOT_RESCHEDULE'))
+    return 'Lịch hẹn này không thể đổi lịch.';
+  if (message.includes('SPECIALTY_MISMATCH'))
+    return 'Slot mới phải cùng chuyên khoa với lịch hẹn hiện tại.';
+  if (message.includes('OUTSIDE_DOCTOR_SCHEDULE'))
+    return 'Giờ khám mới không nằm trong lịch làm việc của bác sĩ.';
+  if (message.includes('REASON_REQUIRED'))
+    return 'Vui lòng nhập lý do đổi lịch.';
+  if (message.includes('REASON_TOO_LONG'))
+    return 'Lý do đổi lịch tối đa 500 ký tự.';
   return message;
 }

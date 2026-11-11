@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { sanitizePinInput } from '@/lib/pin-input';
 
 type SetupPinDialogProps = {
   open: boolean;
@@ -79,9 +80,8 @@ export default function SetupPinDialog({ open, onClose, onSetup }: SetupPinDialo
               id="new-pin"
               type="password"
               inputMode="numeric"
-              maxLength={6}
               value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+              onChange={(e) => setPin(sanitizePinInput(e.target.value))}
               placeholder="••••••"
               className="text-center text-xl tracking-[0.5em] font-mono h-12"
               disabled={setting}
@@ -94,9 +94,8 @@ export default function SetupPinDialog({ open, onClose, onSetup }: SetupPinDialo
               id="confirm-pin"
               type="password"
               inputMode="numeric"
-              maxLength={6}
               value={confirmPin}
-              onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+              onChange={(e) => setConfirmPin(sanitizePinInput(e.target.value))}
               placeholder="••••••"
               className="text-center text-xl tracking-[0.5em] font-mono h-12"
               disabled={setting}

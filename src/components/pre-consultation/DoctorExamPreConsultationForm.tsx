@@ -43,6 +43,7 @@ type Props = {
   updaterName?: string | null;
   updatedAt?: string | null;
   onSaved: () => void;
+  variant?: "default" | "intake";
 };
 
 const EMPTY_COMPACT: CompactFields = {
@@ -60,6 +61,7 @@ export default function DoctorExamPreConsultationForm({
   updaterName,
   updatedAt,
   onSaved,
+  variant = "default",
 }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -71,8 +73,6 @@ export default function DoctorExamPreConsultationForm({
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const id = await createOrGetDoctorPreConsultation(appointmentId);
-      setRecordId(id);
       const bundle = await getPreConsultationBundle(appointmentId);
       const base = bundle.doctor
         ? clinicalRecordToFormData(bundle.doctor)
@@ -81,12 +81,19 @@ export default function DoctorExamPreConsultationForm({
       const compact = fullDataToCompactForm(base);
       setFields(compact);
       savedSnapshot.current = compact;
+
+      if (bundle.doctor?.id) {
+        setRecordId(bundle.doctor.id);
+      } else if (canEdit) {
+        const id = await createOrGetDoctorPreConsultation(appointmentId);
+        setRecordId(id);
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
       setLoading(false);
     }
-  }, [appointmentId]);
+  }, [appointmentId, canEdit]);
 
   useEffect(() => {
     void load();
@@ -133,13 +140,108 @@ export default function DoctorExamPreConsultationForm({
 
   const hasAllergy = Boolean(fields.allergiesText.trim());
   const footerTime = updatedAt
-    ? format(parseISO(updatedAt), 'dd/MM/yyyy HH:mm', { locale: vi })
+    ? format(parseISO(updatedAt), variant === "intake" ? "HH:mm dd/MM/yyyy" : "dd/MM/yyyy HH:mm", { locale: vi })
     : null;
 
   if (loading) {
     return (
       <div className="flex justify-center py-16">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (variant === "intake") {
+    const fieldLabel = "flex flex-col gap-1 text-xs font-medium text-[#4A4440]";
+    const fieldInput =
+      "h-[34px] rounded-[7px] border border-[#E1DDDA] bg-[#FAF9F8] px-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:opacity-60";
+    return (
+      <div className="flex flex-col gap-3 rounded-[10px] border border-[#E8E5E2] bg-white p-3.5">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-semibold text-[#1A1614]">Khai báo sử dụng khi khám</span>
+          <span className="rounded-full bg-[#EAF0FF] px-2 py-0.5 text-[11px] font-semibold text-[#1D4FD8]">
+            Bác sĩ nhập
+          </span>
+        </div>
+
+        <label className={fieldLabel}>
+          Triệu chứng chính
+          <Input
+            value={fields.chief_complaint}
+            onChange={(e) => updateField("chief_complaint", e.target.value)}
+            disabled={!canEdit}
+            placeholder="VD: Đau dạ dày cấp, chướng bụng"
+            className={fieldInput}
+          />
+        </label>
+
+        <SymptomOnsetPicker
+          layout="inline"
+          value={fields.durationText}
+          onChange={(val) => updateField("durationText", val)}
+          disabled={!canEdit}
+        />
+
+        <label className={fieldLabel}>
+          Bệnh sử
+          <Textarea
+            value={fields.medicalHistoryText}
+            onChange={(e) => updateField("medicalHistoryText", e.target.value)}
+            disabled={!canEdit}
+            rows={2}
+            placeholder="VD: Viêm loét dạ dày mãn tính (2023)"
+            className="resize-y rounded-[7px] border border-[#E1DDDA] bg-[#FAF9F8] px-2.5 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:opacity-60"
+          />
+        </label>
+
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <label className={fieldLabel}>
+            Dị ứng
+            <Input
+              value={fields.allergiesText}
+              onChange={(e) => updateField("allergiesText", e.target.value)}
+              disabled={!canEdit}
+              placeholder="VD: Dị ứng Penicillin"
+              className={fieldInput}
+            />
+          </label>
+          <label className={fieldLabel}>
+            Lối sống
+            <Input
+              value={fields.lifestyleText}
+              onChange={(e) => updateField("lifestyleText", e.target.value)}
+              disabled={!canEdit}
+              placeholder="VD: Hút thuốc (1 bao/ngày)"
+              className={fieldInput}
+            />
+          </label>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 border-t border-[#F0EDEB] pt-2.5">
+          <span className="min-w-0 flex-1 text-[11.5px] text-[#7A726D]">
+            Cập nhật cuối: {formatDoctorDisplayName(updaterName)}
+            {footerTime ? ` · ${footerTime}` : ""}
+          </span>
+          {canEdit && patientRecord?.status === "SUBMITTED" && (
+            <button
+              type="button"
+              onClick={handleCopyFromPatient}
+              className="h-[30px] cursor-pointer rounded-[7px] border border-[#D9D5D1] bg-white px-2.5 text-xs font-medium text-[#1A1614] transition-colors duration-200 hover:bg-[#FAF9F8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]"
+            >
+              Sao chép
+            </button>
+          )}
+          {canEdit && (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => void handleSave()}
+              className="h-[30px] cursor-pointer rounded-[7px] border border-[#D9D5D1] bg-white px-3 text-xs font-semibold text-[#1A1614] transition-colors duration-200 hover:bg-[#FAF9F8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? "Đang lưu…" : "Lưu bản khai khám"}
+            </button>
+          )}
+        </div>
       </div>
     );
   }

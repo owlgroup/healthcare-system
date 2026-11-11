@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   addDays, differenceInYears, endOfMonth, endOfWeek,
   format, isValid, parseISO, startOfMonth, startOfWeek,
@@ -17,6 +17,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  fetchDoctorAppointments,
   fetchDoctorSpecialtyId,
   searchDoctorAppointments,
   sendPreConsultReminder,
@@ -35,6 +36,7 @@ import CancelDialog from "@/components/admin/appointments/CancelDialog";
 import RescheduleDialog from "@/components/admin/appointments/RescheduleDialog";
 import VitalSignsSheet from "@/components/admin/appointments/VitalSignsSheet";
 import WalkInDialog from "@/components/admin/appointments/WalkInDialog";
+import { VITALS_QUERY_PARAM } from "@/lib/provider-appointment-links";
 
 type DateMode = "all" | "day" | "week" | "month";
 
@@ -161,6 +163,35 @@ export default function ProviderAppointmentsPage() {
   const [checkingInId, setCheckingInId] = useState<string | null>(null);
   const [remindingId, setRemindingId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const vitalsAppointmentId = searchParams.get(VITALS_QUERY_PARAM);
+
+  // Deep link (e.g. from a notification): open the vital-signs popup for that
+  // appointment, even when it is not on the current list page.
+  useEffect(() => {
+    if (!vitalsAppointmentId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const all = await fetchDoctorAppointments({});
+        const appt = all.find((a) => a.id === vitalsAppointmentId);
+        if (cancelled) return;
+        if (appt) setVitalSignsAppt(appt);
+        else toast.error("Không tìm thấy lịch hẹn.");
+      } catch (e) {
+        if (!cancelled) toast.error(e instanceof Error ? e.message : "Không tải được lịch hẹn.");
+      } finally {
+        if (!cancelled) {
+          setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete(VITALS_QUERY_PARAM);
+            return next;
+          }, { replace: true });
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [vitalsAppointmentId, setSearchParams]);
 
   const { dateFrom, dateTo, label } = mode === "all"
     ? { dateFrom: undefined, dateTo: undefined, label: "Tất cả" }

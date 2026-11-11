@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import type { MedicalExamination } from '@/types/emr';
 import { isPinSignLockMessage, PIN_SIGN_LOCK_MESSAGE } from '@/types/emr';
+import { sanitizePinInput } from '@/lib/pin-input';
 
 type AddendumSignOffDialogProps = {
   open: boolean;
@@ -151,10 +152,9 @@ export default function AddendumSignOffDialog({
                 type={showPin ? 'text' : 'password'}
                 inputMode="numeric"
                 pattern="[0-9]*"
-                maxLength={6}
                 value={pin}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
+                  const val = sanitizePinInput(e.target.value);
                   setPin(val);
                   if (!isLocked) setPinError('');
                 }}

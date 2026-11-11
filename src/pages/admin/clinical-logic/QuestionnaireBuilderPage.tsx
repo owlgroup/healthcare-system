@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Loader2, Eye, Upload, Plus, Copy, AlertTriangle } from "lucide-react";
+import { Loader2, Plus, Copy, AlertTriangle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { fetchQuestionCategories } from "@/lib/master-data-api";
 import type { QuestionCategory } from "@/types/master-data";
 import {
@@ -21,8 +18,11 @@ import TreeCoveragePanel from "./builder/TreeCoveragePanel";
 import PreviewDialog from "./builder/PreviewDialog";
 import { blankSection } from "./builder/types";
 
-const inputCls =
-  "w-full rounded-xl border border-border/60 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60";
+const fieldCls =
+  "w-full rounded-lg border border-[#E1DDDA] bg-[#FAF9F8] px-3 text-sm text-[#1A1614] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:cursor-not-allowed disabled:opacity-60";
+
+const ghostBtn =
+  "inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-[#D9D5D1] bg-white px-3.5 text-sm font-semibold text-[#1A1614] transition-colors duration-200 hover:bg-[#FAF9F8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function QuestionnaireBuilderPage() {
   const { id } = useParams();
@@ -72,9 +72,7 @@ export default function QuestionnaireBuilderPage() {
   }, [currentId]);
 
   const disabled = blockedByResponses;
-  const breadcrumbSlug = name.trim()
-    ? `${name.toUpperCase()}${description ? " — THANG ĐO" : ""}`
-    : "BỘ CÂU HỎI MỚI";
+  const crumb = name.trim() || (isNew ? "Bộ câu hỏi mới" : "Chỉnh sửa");
 
   function addSection() {
     setSections([...sections, blankSection(currentId ?? "")]);
@@ -145,46 +143,37 @@ export default function QuestionnaireBuilderPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto pb-10">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-primary">
-            Thư viện / {breadcrumbSlug}
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 pb-10">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9A928D]">
+            Thư viện › <span className="text-[#C41740]">{crumb}</span>
           </p>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground mt-2">
-            {name ? `Tạo bộ câu hỏi: ${name}` : "Tạo bộ câu hỏi mới"}
+          <h1 className="mt-1 text-2xl font-bold text-[#1A1614]">
+            {isNew ? "Tạo bộ câu hỏi mới" : "Chỉnh sửa bộ câu hỏi"}
           </h1>
           {currentId && (
-            <p className="text-xs text-muted-foreground mt-1.5">
-              {STATUS_LABELS[status]}
-            </p>
+            <p className="mt-1 text-xs text-[#7A726D]">{STATUS_LABELS[status]}</p>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setPreviewOpen(true)}
-            className="flex items-center gap-2 rounded-xl border-2 border-teal-500 bg-white px-5 py-2.5 text-sm font-semibold text-teal-600 hover:bg-teal-50"
-          >
-            <Eye className="h-4 w-4" /> Xem trước
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className={ghostBtn} onClick={() => navigate("/admin/question-library")}>
+            <ArrowLeft className="h-4 w-4" /> Quay lại
           </button>
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={saving || disabled}
-            className="hidden sm:flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold hover:bg-muted disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Lưu
+          <button type="button" className={ghostBtn} onClick={() => setPreviewOpen(true)}>
+            Xem trước
+          </button>
+          <button type="button" className={ghostBtn} onClick={() => void handleSave()} disabled={saving || disabled}>
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            Lưu nháp
           </button>
           <button
             type="button"
             onClick={() => void handlePublish()}
             disabled={publishing || disabled || status === "ACTIVE"}
-            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-sm hover:opacity-90 disabled:opacity-50"
+            className="inline-flex h-9 cursor-pointer items-center rounded-lg bg-[#C41740] px-3.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[#A8123A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {publishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {publishing && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
             Xuất bản
           </button>
         </div>
@@ -208,32 +197,44 @@ export default function QuestionnaireBuilderPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-6">
-        {/* Left — builder */}
-        <div className="space-y-5 min-w-0">
-          <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm space-y-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Thông tin bộ câu hỏi</p>
+      <div className="flex flex-wrap items-start gap-4">
+        <div className="grid min-w-0 flex-[999] basis-[560px] gap-3.5">
+          <div className="flex flex-col gap-3 rounded-xl border border-[#E8E5E2] bg-white p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#7A726D]">Thông tin bộ câu hỏi</p>
             <input
               value={name}
               disabled={disabled}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Tên (VD: PHQ-8)"
-              className={`${inputCls} text-base font-semibold`}
+              placeholder="Tên bộ câu hỏi (VD: PHQ-8)"
+              className={`${fieldCls} h-10 text-[15px] font-semibold`}
             />
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Select value={categoryId ?? ""} disabled={disabled} onValueChange={(v) => setCategoryId(v)}>
-                <SelectTrigger className="sm:w-56 rounded-xl"><SelectValue placeholder="Chọn phân loại *" /></SelectTrigger>
-                <SelectContent>
-                  {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <input
-                value={description}
-                disabled={disabled}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Mô tả ngắn"
-                className={`${inputCls} flex-1`}
-              />
+            <input
+              value={description}
+              disabled={disabled}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Mô tả ngắn"
+              className={`${fieldCls} h-[38px]`}
+            />
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="text-xs text-[#7A726D]">Phân loại</span>
+              {categories.map((category) => {
+                const selected = categoryId === category.id;
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => setCategoryId(category.id)}
+                    className={`h-[30px] cursor-pointer rounded-full border px-3 text-[12.5px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:cursor-not-allowed disabled:opacity-50 ${
+                      selected
+                        ? "border-[#C41740] bg-[#FFF8F9] font-semibold text-[#C41740]"
+                        : "border-[#E1DDDA] bg-white font-medium text-[#4A4440] hover:border-[#C41740]"
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -253,16 +254,20 @@ export default function QuestionnaireBuilderPage() {
             type="button"
             onClick={addSection}
             disabled={disabled}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border/80 py-5 text-sm font-semibold text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5 disabled:opacity-40 transition-colors"
+            className="h-[52px] cursor-pointer rounded-xl border-[1.5px] border-dashed border-[#D9D5D1] text-sm font-semibold text-[#57524E] transition-colors duration-200 hover:border-[#C41740] hover:text-[#C41740] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="mr-1 inline h-4 w-4" />
             Thêm phần
           </button>
         </div>
 
-        {/* Right — modules */}
-        <div className="space-y-4 xl:sticky xl:top-20 self-start">
-          <ScoringPanel scoring={scoring} onChange={setScoring} disabled={disabled} />
+        <div className="grid min-w-0 flex-1 basis-[300px] content-start gap-3.5 xl:sticky xl:top-20">
+          <ScoringPanel
+            scoring={scoring}
+            onChange={setScoring}
+            disabled={disabled}
+            scoredQuestionCount={sections.flatMap((s) => s.questions).filter((q) => q.type === "SINGLE_CHOICE" || q.type === "MULTIPLE_CHOICE" || q.type === "SCALE").length}
+          />
           <InterventionMatrixPanel rules={interventionMatrix} onChange={setInterventionMatrix} disabled={disabled} />
           <TreeCoveragePanel sections={sections} />
         </div>

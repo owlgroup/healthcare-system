@@ -14,10 +14,11 @@ import AddendumSignOffDialog from './AddendumSignOffDialog';
 type ExamAddendumFormProps = {
   examId: string;
   onCreated?: () => void;
+  defaultOpen?: boolean;
 };
 
-export default function ExamAddendumForm({ examId, onCreated }: ExamAddendumFormProps) {
-  const [open, setOpen] = useState(false);
+export default function ExamAddendumForm({ examId, onCreated, defaultOpen = false }: ExamAddendumFormProps) {
+  const [open, setOpen] = useState(defaultOpen);
   const [reason, setReason] = useState('');
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);

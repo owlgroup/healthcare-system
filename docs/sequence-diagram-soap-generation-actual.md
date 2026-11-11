@@ -5,7 +5,7 @@
 ## Overview
 
 - **Architecture**: Frontend-driven direct API calls (không có BullMQ queue)
-- **STT Service**: `healthcare.187-127-103-1.nip.io`
+- **STT Service**: `stt.hivns.org`
 - **Database**: Supabase (PostgreSQL)
 - **Real-time**: WebSocket streaming transcript
 

@@ -53,11 +53,10 @@ describe("ExamVersionHistoryTable", () => {
       />
     );
 
-    expect(screen.getByText("3 phiên bản")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Đang xem" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Xem chi tiết" })).toHaveLength(2);
+    expect(screen.getByRole("button", { name: /Phiên bản 3/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getAllByRole("button", { pressed: false })).toHaveLength(2);
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Xem chi tiết" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /Phiên bản 2/ }));
     expect(onSelectVersion).toHaveBeenCalledWith(2);
   });
 });
@@ -92,7 +91,7 @@ describe("SoapVersionDiff", () => {
       <SoapVersionDiff currentVersion={current} previousVersion={previous} />
     );
 
-    expect(screen.getByRole("heading", { name: "Chi tiết Phiên bản 2" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Chi tiết phiên bản 2" })).toBeInTheDocument();
     expect(screen.queryByText(/· Hiện tại/)).not.toBeInTheDocument();
 
     rerender(
@@ -102,8 +101,7 @@ describe("SoapVersionDiff", () => {
       />
     );
 
-    expect(screen.getByRole("heading", { name: "Chi tiết Phiên bản 3" })).toBeInTheDocument();
-    expect(screen.getByText(/Phiên bản 3 · Hiện tại/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Chi tiết phiên bản 3 · Hiện tại" })).toBeInTheDocument();
   });
 
   it("shows edited vs unchanged badges for SOAP sections", () => {

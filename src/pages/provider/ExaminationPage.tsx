@@ -21,6 +21,7 @@ import { format, parseISO } from 'date-fns';
 import { UI_WALK_IN } from "@/config/ui-labels";
 import { vi } from 'date-fns/locale';
 import { ADMIN_STATUS_LABEL } from '@/types/admin-appointment';
+import { VITALS_QUERY_PARAM } from '@/lib/provider-appointment-links';
 
 export default function ExaminationPage() {
   const { appointmentId } = useParams<{ appointmentId: string }>();
@@ -42,6 +43,10 @@ export default function ExaminationPage() {
         const appt = all.find((a) => a.id === appointmentId);
         if (!appt) {
           setError('Không tìm thấy lịch hẹn.');
+        } else if (appt.status === 'CONFIRMED' && !isAdminPortal) {
+          // Not checked in yet (e.g. opened from a notification): send the doctor
+          // to the vital-signs intake popup instead of a dead-end error.
+          navigate(`${appointmentsPath}?${VITALS_QUERY_PARAM}=${appt.id}`, { replace: true });
         } else if (!['CHECKED_IN', 'IN_PROGRESS', 'COMPLETED'].includes(appt.status)) {
           setError(
             `Lịch hẹn có trạng thái "${ADMIN_STATUS_LABEL[appt.status]}" — cần tiếp nhận trước khi khám.`
@@ -57,7 +62,7 @@ export default function ExaminationPage() {
         setLoading(false);
       }
     })();
-  }, [appointmentId, isAdminPortal]);
+  }, [appointmentId, isAdminPortal, appointmentsPath, navigate]);
 
   const slotLabel = appointment?.slot_date
     ? format(parseISO(appointment.slot_date), 'dd/MM/yyyy', { locale: vi })

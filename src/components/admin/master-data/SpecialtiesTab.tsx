@@ -7,7 +7,7 @@ import type { Specialty } from '@/types/master-data';
 import { useRegisterAddAction } from './MasterDataActionsContext';
 import {
   EntityTable, ActiveBadge, RowActions, useToggleActive, ActiveStatusField, DeleteConfirmDialog,
-  Field, inputCls, useEntityDialog, useEntityTableData, cellPrimaryCls, cellMutedCls, cellCls,
+  Field, inputCls, catalogDialogCls, catalogOverlayCls, useEntityDialog, useEntityTableData, cellPrimaryCls, cellMutedCls, cellCls,
 } from './shared';
 
 const EMPTY: Omit<Specialty, 'id' | 'created_at'> = {
@@ -134,7 +134,7 @@ function SpecialtyDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className={catalogDialogCls} overlayClassName={catalogOverlayCls}>
         <DialogHeader>
           <DialogTitle>{form.id ? 'Sửa chuyên khoa' : 'Thêm chuyên khoa'}</DialogTitle>
         </DialogHeader>
@@ -153,8 +153,8 @@ function SpecialtyDialog({
             onChange={(is_active) => setForm((f) => ({ ...f, is_active }))}
           />
           <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-muted">Hủy</button>
-            <button type="submit" disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 flex items-center gap-2">
+            <button type="button" onClick={onClose} className="inline-flex h-9 cursor-pointer items-center rounded-lg border border-[#D9D5D1] bg-white px-3.5 text-sm font-semibold text-[#1A1614] transition-colors duration-200 hover:bg-[#FAF9F8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]/40">Hủy</button>
+            <button type="submit" disabled={saving} className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-[#C41740] px-3.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[#A8123A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]/40 disabled:cursor-not-allowed disabled:opacity-50">
               {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {form.id ? 'Lưu' : 'Thêm'}
             </button>

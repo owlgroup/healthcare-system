@@ -6,6 +6,11 @@ export const CUSTOMER_NAV_PERMISSIONS: Record<string, string[]> = {
   "/customer-portal/patients": ["VIEW_PROVIDER_PATIENTS", "EDIT_PROVIDER_PATIENTS"],
   "/customer-portal/appointments": ["VIEW_APPOINTMENT", "appointments.read"],
   "/customer-portal/master-data": ["master_data.read", "master_data.write"],
+  "/customer-portal/question-library": ["questionnaire.read", "questionnaire.write"],
+  "/customer-portal/users": ["users.read"],
+  "/customer-portal/permissions": ["roles.read"],
+  "/customer-portal/roles": ["roles.read", "roles.create", "roles.update"],
+  "/customer-portal/delta-log": ["audit.read"],
 };
 
 export function canAccessCustomerRoute(permissions: Set<string>, path: string): boolean {

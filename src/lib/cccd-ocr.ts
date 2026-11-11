@@ -118,8 +118,9 @@ function getOcrBaseUrl(): string {
 }
 
 function getOcrServiceUrl(): string {
-  const raw = getEnv("VITE_OCR_SERVICE_URL");
-  return (typeof raw === "string" && raw.trim() ? raw.trim() : "https://ocr.187-127-103-1.nip.io").replace(/\/$/, "");
+  const raw = getEnv("VITE_OCR_SERVICE_URL")?.trim();
+  if (!raw) throw new Error("Thiếu cấu hình VITE_OCR_SERVICE_URL trong .env");
+  return raw.replace(/\/$/, "");
 }
 
 /** Call the OCR service for a single image slot. */

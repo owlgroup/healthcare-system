@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Loader2, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -32,6 +32,7 @@ import {
   type OcrQualityResult,
 } from "@/lib/cccd-ocr";
 import { CCCD_REQUIRED_EMPTY, validateCccdRequired } from "@/lib/cccd-required";
+import { applyOcrForSlot, type OcrFills, type OcrSlot } from "@/lib/ocr-refill";
 
 const MAX_SIZE = 10 * 1024 * 1024;
 
@@ -83,6 +84,9 @@ export default function AdminNewPatientDialog({ open, onClose, onSuccess, portal
   const [ocrFrontQuality, setOcrFrontQuality] = useState<OcrQualityResult | null>(null);
   const [ocrBackQuality, setOcrBackQuality] = useState<OcrQualityResult | null>(null);
   const [ocrBhytQuality, setOcrBhytQuality] = useState<OcrQualityResult | null>(null);
+  // Tracks which upload slot's OCR wrote each field, so replacing an image and
+  // re-scanning refreshes those fields instead of being blocked by fill-empty.
+  const ocrFillsRef = useRef<OcrFills>({});
 
   const focusFirstEmptyCccdField = () => {
     const fields = ["legalLastName", "legalFirstName", "dateOfBirth", "idNumber", "expirationDate", "issuedDate", "issuer", "residentialAddress", "phoneNumber"];
@@ -147,11 +151,22 @@ export default function AdminNewPatientDialog({ open, onClose, onSuccess, portal
     setDupResult(null); setDupBypassed(false);
     setIdFile(null); setIdBackFile(null); setCardFile(null);
     setOcrFrontQuality(null); setOcrBackQuality(null); setOcrBhytQuality(null);
+    ocrFillsRef.current = {};
     setLightbox(null);
     onClose();
   };
 
-  const runOcr = async (type: "front" | "back" | "bhyt") => {
+  const applySlotOcr = (slot: OcrSlot, applyParsed: (current: FormData) => FormData) => {
+    // Read the ref outside the updater so a StrictMode double-invoke stays deterministic.
+    const prevFills = ocrFillsRef.current;
+    setForm(p => {
+      const result = applyOcrForSlot(p, prevFills, slot, applyParsed);
+      ocrFillsRef.current = result.fills;
+      return result.form;
+    });
+  };
+
+  const runOcr = async (type: OcrSlot) => {
     const file = type === "front" ? idFile : type === "back" ? idBackFile : cardFile;
     if (!file) return;
     const setter = type === "front" ? setOcrFront : type === "back" ? setOcrBack : setOcrBhyt;
@@ -165,7 +180,7 @@ export default function AdminNewPatientDialog({ open, onClose, onSuccess, portal
         qualitySetter(quality);
 
         if (json.parsed && typeof json.parsed === "object") {
-          setForm(p => applyBhytParsedFillEmpty(p, json.parsed));
+          applySlotOcr("bhyt", p => applyBhytParsedFillEmpty(p, json.parsed));
         }
 
         if (quality.isLowQuality) {
@@ -179,7 +194,7 @@ export default function AdminNewPatientDialog({ open, onClose, onSuccess, portal
         qualitySetter(quality);
 
         if (json.parsed && typeof json.parsed === "object") {
-          setForm(p => applyCccdParsedFillEmpty(p, json.parsed));
+          applySlotOcr(type, p => applyCccdParsedFillEmpty(p, json.parsed));
         }
 
         if (quality.isLowQuality) {

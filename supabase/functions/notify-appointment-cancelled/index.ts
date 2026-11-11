@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 import nodemailer from "npm:nodemailer@6.9.13";
 import { handleOptions, jsonResponse } from "../_shared/cors.ts";
+import { isAuthContext, requireStaffPortalRole } from "../_shared/rbac.ts";
 import { getSiteUrl } from "../_shared/site-url.ts";
 
 interface RequestBody {
@@ -11,6 +12,10 @@ interface RequestBody {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return handleOptions();
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
+
+  // Tự kiểm tra người gọi — self-hosted chạy VERIFY_JWT=false toàn cục.
+  const auth = await requireStaffPortalRole(req, ["admin", "doctor"]);
+  if (!isAuthContext(auth)) return auth;
 
   const smtpUser = Deno.env.get("SMTP_USER");
   const smtpPass = Deno.env.get("SMTP_PASS");

@@ -40,7 +40,7 @@ describe("mapPatientRecordListRow name order", () => {
         legal_first_name: "  ",
         legal_last_name: "",
         email_address: "bn@example.com",
-        status: "DRAFT",
+        status: "UNVERIFIED",
       }).full_name,
     ).toBe("bn@example.com");
 
@@ -49,7 +49,7 @@ describe("mapPatientRecordListRow name order", () => {
         ...baseRow,
         legal_first_name: null,
         legal_last_name: null,
-        status: "DRAFT",
+        status: "UNVERIFIED",
       }).full_name,
     ).toBe("Bệnh nhân");
   });
@@ -78,16 +78,15 @@ describe("mapPatientRecordListRow status from DB", () => {
     expect(row.status).toBe("Đã nộp");
   });
 
-  it("should not treat submitted_at as Đã nộp when status is DRAFT", () => {
+  it("should show Đã nộp when a legacy DRAFT status comes from the DB", () => {
     const row = mapPatientRecordListRow({
       ...baseRow,
       legal_first_name: "Bình",
       legal_last_name: "Lê",
-      created_by_role: "admin",
+      created_by_role: "patient",
       status: "DRAFT",
     });
-    expect(row.status).toBe("Bản nháp");
-    expect(row.status).not.toBe("Đã nộp");
+    expect(row.status).toBe("Đã nộp");
   });
 
   it("should show Ngừng hoạt động for INACTIVE", () => {

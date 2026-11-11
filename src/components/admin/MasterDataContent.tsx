@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { ChevronRight, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   listDoctorSchedulesAdmin,
@@ -47,17 +47,14 @@ function MasterDataInner() {
   }, [setTabCount]);
 
   return (
-    <div className="max-w-6xl mx-auto w-full">
-      {/* Page header */}
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-0 flex-1 basis-80 space-y-1">
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            <span>Quản trị</span>
-            <ChevronRight className="h-3 w-3" aria-hidden />
-            <span className="text-primary">Danh mục</span>
+    <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-3.5 text-[#1A1614]">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex min-w-0 flex-1 basis-[360px] flex-col gap-1">
+          <nav aria-label="Breadcrumb" className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9A928D]">
+            Quản trị › <span className="text-[#C41740]">Danh mục</span>
           </nav>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Danh mục hệ thống</h1>
-          <p className="text-sm text-muted-foreground text-pretty">
+          <h1 className="text-2xl font-bold tracking-[-0.01em] text-[#1A1614]">Danh mục hệ thống</h1>
+          <p className="text-pretty text-sm text-[#7A726D]">
             Quản lý chuyên khoa, dịch vụ, cơ sở, phòng khám, lịch bác sĩ và danh mục câu hỏi.
           </p>
         </div>
@@ -65,27 +62,26 @@ function MasterDataInner() {
           <button
             type="button"
             onClick={currentAddAction.onAdd}
-            className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors cursor-pointer hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2"
+            className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg bg-[#C41740] px-3.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[#A8123A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]/40 focus-visible:ring-offset-2 motion-reduce:transition-none"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-4 w-4" aria-hidden />
             {currentAddAction.label}
           </button>
         )}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-0">
-        {/* Segmented tab navigation */}
-        <div className="mb-4 overflow-x-auto rounded-xl bg-muted p-1">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3.5">
+        <div className="overflow-x-auto rounded-[9px] bg-[#EDEAE7] p-[3px]">
           <TabsList className="flex h-auto w-full min-w-max gap-0.5 bg-transparent p-0">
             {TABS.map((t) => (
               <TabsTrigger
                 key={t.value}
                 value={t.value}
-                className="flex-1 gap-1.5 rounded-lg px-4 py-2 text-[13px] font-semibold text-muted-foreground transition-colors cursor-pointer hover:text-foreground data-[state=active]:bg-card data-[state=active]:text-primary data-[state=active]:shadow-sm"
+                className="h-8 flex-1 cursor-pointer gap-1.5 rounded-[7px] px-3.5 text-[12.5px] font-semibold text-[#57524E] shadow-none transition-colors duration-200 hover:text-[#1A1614] focus-visible:ring-[#C41740] focus-visible:ring-offset-0 data-[state=active]:bg-white data-[state=active]:text-[#C41740] data-[state=active]:shadow-[0_1px_2px_rgba(0,0,0,0.08)] motion-reduce:transition-none"
               >
                 {t.label}
                 {tabCounts[t.value] !== undefined && (
-                  <span className="text-[11px] font-medium text-muted-foreground">{tabCounts[t.value]}</span>
+                  <span className="text-[11px] font-medium text-[#9A928D]">{tabCounts[t.value]}</span>
                 )}
               </TabsTrigger>
             ))}

@@ -38,7 +38,6 @@ import BulkCancelDialog from "./appointments/BulkCancelDialog";
 import AppointmentDetailSheet from "./appointments/AppointmentDetailSheet";
 import CancelDialog from "./appointments/CancelDialog";
 import RescheduleDialog from "./appointments/RescheduleDialog";
-import VitalSignsSheet from "./appointments/VitalSignsSheet";
 
 const APPOINTMENT_LIST_PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -112,7 +111,7 @@ export default function AdminAppointmentsContent() {
 
   const [walkInOpen, setWalkInOpen] = useState(false);
   const [bulkCancelOpen, setBulkCancelOpen] = useState(false);
-  const [vitalSignsAppt, setVitalSignsAppt] = useState<AdminAppointment | null>(null);
+  const [detailTab, setDetailTab] = useState<"info" | "vitals">("info");
   const [remindingId, setRemindingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -411,16 +410,12 @@ export default function AdminAppointmentsContent() {
                     todayStr={todayStr}
                     selected={selectedIds.has(appt.id)}
                     onToggle={() => toggleSelect(appt.id)}
-                    onOpen={() =>
-                      appt.status === "COMPLETED" || appt.status === "CANCELLED" || appt.status === "NO_SHOW"
-                        ? setDetailAppt(appt)
-                        : setVitalSignsAppt(appt)
-                    }
-                    onCheckin={() => setVitalSignsAppt(appt)}
-                    onViewDetail={() => setDetailAppt(appt)}
+                    onOpen={() => { setDetailTab("info"); setDetailAppt(appt); }}
+                    onCheckin={() => { setDetailTab("info"); setDetailAppt(appt); }}
+                    onViewDetail={() => { setDetailTab("info"); setDetailAppt(appt); }}
                     onCancel={() => setCancelAppt(appt)}
                     onReschedule={() => setRescheduleAppt(appt)}
-                    onVitalSigns={() => setVitalSignsAppt(appt)}
+                    onVitalSigns={() => { setDetailTab("vitals"); setDetailAppt(appt); }}
                     onPreConsultReminder={() => void handlePreConsultReminder(appt)}
                     reminding={remindingId === appt.id}
                   />
@@ -489,6 +484,7 @@ export default function AdminAppointmentsContent() {
       <AppointmentDetailSheet
         appointment={detailAppt}
         open={!!detailAppt}
+        initialTab={detailTab}
         onClose={() => setDetailAppt(null)}
         onRefresh={refresh}
       />
@@ -513,11 +509,6 @@ export default function AdminAppointmentsContent() {
         />
       )}
 
-      {/* ── Nhập sinh hiệu sheet ─────────────────────────────────────────────── */}
-      <VitalSignsSheet
-        appointment={vitalSignsAppt}
-        onClose={() => setVitalSignsAppt(null)}
-      />
     </div>
   );
 }

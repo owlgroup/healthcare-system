@@ -14,6 +14,9 @@ type Props = {
   creatorName?: string | null;
   submittedAt?: string | null;
   isDraft?: boolean;
+  variant?: "default" | "intake";
+  onRemind?: () => void;
+  reminding?: boolean;
 };
 
 export default function PatientPreConsultationPanel({
@@ -21,10 +24,47 @@ export default function PatientPreConsultationPanel({
   creatorName,
   submittedAt,
   isDraft,
+  variant = "default",
+  onRemind,
+  reminding = false,
 }: Props) {
   const timestamp = submittedAt
     ? format(parseISO(submittedAt), 'dd/MM/yyyy HH:mm', { locale: vi })
     : null;
+
+  if (variant === "intake") {
+    const submitted = Boolean(record && hasClinicalContent(record));
+    const subtitle = isDraft
+      ? "Bệnh nhân đang khai báo (chưa gửi)."
+      : submitted
+        ? "Bệnh nhân đã gửi khai báo."
+        : "Bệnh nhân chưa gửi khai báo.";
+    return (
+      <div className="rounded-[10px] border border-[#E8E5E2] bg-white px-3.5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-semibold text-[#1A1614]">Khai báo của bệnh nhân</p>
+            <p className="text-xs text-[#7A726D]">{subtitle}</p>
+          </div>
+          {onRemind && !submitted && (
+            <button
+              type="button"
+              onClick={onRemind}
+              disabled={reminding}
+              className="h-[30px] cursor-pointer rounded-[7px] border border-[#D9D5D1] bg-white px-2.5 text-xs font-medium text-[#1A1614] transition-colors duration-200 hover:bg-[#FAF9F8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {reminding ? "Đang gửi…" : "Nhắc bệnh nhân"}
+            </button>
+          )}
+        </div>
+        {submitted && record && (
+          <div className="mt-3 border-t border-[#F0EDEB] pt-3">
+            <PreConsultationSectionCards record={record} columns={1} />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   if (isDraft) {
     return (

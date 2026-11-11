@@ -38,7 +38,6 @@ export const PATIENT_STATUS_LABELS: Record<string, string> = {
   Draft: "Nháp",
   ACTIVE: "Đang hoạt động",
   UNVERIFIED: "Đã nộp",
-  DRAFT: "Bản nháp",
   INACTIVE: "Ngừng hoạt động",
   REJECTED: "Đã từ chối",
 };
@@ -54,15 +53,13 @@ export function formatPatientProfileStatus(status: string | null | undefined): s
   switch (key) {
     case "ACTIVE":
       return PATIENT_STATUS_LABELS.ACTIVE;
-    case "UNVERIFIED":
-      return PATIENT_STATUS_LABELS.UNVERIFIED;
     case "INACTIVE":
       return PATIENT_STATUS_LABELS.INACTIVE;
     case "REJECTED":
       return PATIENT_STATUS_LABELS.REJECTED;
-    case "DRAFT":
+    case "UNVERIFIED":
     default:
-      return PATIENT_STATUS_LABELS.DRAFT;
+      return PATIENT_STATUS_LABELS.UNVERIFIED;
   }
 }
 
