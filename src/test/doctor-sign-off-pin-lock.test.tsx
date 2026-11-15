@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import DoctorSignOffDialog from "@/components/emr/DoctorSignOffDialog";
 import { PIN_SIGN_LOCK_MESSAGE } from "@/types/emr";
-import type { MedicalExamination, SoapIcdCode } from "@/types/emr";
+import type { SoapFormData, SoapIcdCode } from "@/types/emr";
 
 const icd: SoapIcdCode = {
   id: "icd-1",
@@ -19,23 +19,7 @@ const icd: SoapIcdCode = {
   created_at: "2026-09-16T00:00:00.000Z",
 };
 
-const exam: MedicalExamination = {
-  id: "exam-1",
-  appointment_id: "appt-1",
-  patient_id: "user-1",
-  doctor_id: "doc-1",
-  s_text: "S",
-  o_text: "O",
-  a_text: "A",
-  p_text: "P",
-  status: "DRAFT",
-  is_addendum: false,
-  parent_exam_id: null,
-  auto_saved_at: null,
-  created_at: "2026-09-16T00:00:00.000Z",
-  updated_at: "2026-09-16T00:00:00.000Z",
-  icd_codes: [icd],
-};
+const soap: SoapFormData = { s_text: "S", o_text: "O", a_text: "A", p_text: "P" };
 
 function renderDialog(
   overrides: Partial<ComponentProps<typeof DoctorSignOffDialog>> = {}
@@ -48,7 +32,7 @@ function renderDialog(
       onClose={onClose}
       onSign={onSign}
       confirmedIcds={[icd]}
-      exam={exam}
+      soap={soap}
       {...overrides}
     />
   );
@@ -79,7 +63,7 @@ describe("DoctorSignOffDialog PIN lock (TC-DLS-010)", () => {
         onClose={vi.fn()}
         onSign={onSign}
         confirmedIcds={[icd]}
-        exam={exam}
+        soap={soap}
       />
     );
 

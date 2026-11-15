@@ -11,7 +11,7 @@ const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 
 const OnboardingInsurance = () => {
   const navigate = useNavigate();
-  const { data, uploadFiles, updateInsurance, updateInsuranceFromOcr, setCardFrontFile } = useOnboardingForm();
+  const { data, uploadFiles, updateInsurance, applyOcrResult, setCardFrontFile } = useOnboardingForm();
   const [errorMessage, setErrorMessage] = useState("");
   const [isOcrRunning, setIsOcrRunning] = useState(false);
 
@@ -40,7 +40,7 @@ const OnboardingInsurance = () => {
       if (!json.parsed || typeof json.parsed !== "object") {
         throw new Error("Phản hồi BHYT OCR không chứa dữ liệu đã phân tích.");
       }
-      updateInsuranceFromOcr(mapBhytParsedToInsuranceUpdates(json.parsed));
+      applyOcrResult("bhyt", { insurance: mapBhytParsedToInsuranceUpdates(json.parsed) });
       toast.success("OCR BHYT hoàn tất", {
         description: "Các trường bảo hiểm gợi ý đã được điền.",
       });

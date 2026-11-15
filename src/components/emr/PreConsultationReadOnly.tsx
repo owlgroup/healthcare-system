@@ -133,6 +133,13 @@ export default function PreConsultationReadOnly({ appointmentId }: PreConsultati
 
       {data.surgical_history && <Row label="Phẫu thuật" value={data.surgical_history} />}
 
+      {data.family_history.length > 0 && (
+        <Row
+          label="Tiền sử gia đình"
+          value={data.family_history.map((f) => `${f.condition}${f.relation ? ` (${f.relation})` : ''}`).join(', ')}
+        />
+      )}
+
       {data.drug_allergies.length > 0 && (
         <Row
           label="Dị ứng thuốc"
@@ -144,12 +151,21 @@ export default function PreConsultationReadOnly({ appointmentId }: PreConsultati
         />
       )}
 
+      {data.food_allergies.length > 0 && (
+        <Row
+          label="Dị ứng thức ăn"
+          value={data.food_allergies.map((a) => `${a.food} → ${a.reaction}`).join('; ')}
+        />
+      )}
+
       {data.current_medications.length > 0 && (
         <Row
           label="Thuốc đang dùng"
           value={data.current_medications.map((m) => `${m.name} ${m.dose} ${m.frequency}`).join(', ')}
         />
       )}
+
+      {data.otc_supplements && <Row label="Thực phẩm chức năng" value={data.otc_supplements} />}
 
       <div className="flex flex-wrap gap-3">
         {data.smoking && <Row label="Hút thuốc" value={SMOKING_LABELS[data.smoking]} inline />}

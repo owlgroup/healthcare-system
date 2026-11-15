@@ -67,6 +67,8 @@ const WEEKDAY_SHORT = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 /** Cột bảng: chọn · ngày giờ · bệnh nhân · chuyên khoa · loại · bác sĩ · trạng thái · thao tác */
 const ROW_GRID =
   "grid grid-cols-[2rem_9.5rem_minmax(14rem,1fr)_8rem_7rem_9rem_8.5rem_10rem] items-center gap-3";
+// Columns (68rem) + 7 gaps (5.25rem) + px-4 (2rem); narrower lets the actions column spill past the row background.
+const TABLE_MIN_WIDTH = "min-w-[76rem]";
 
 function avatarInitial(name: string | null): string {
   if (!name) return "?";
@@ -369,7 +371,7 @@ export default function AdminAppointmentsContent() {
       {/* ── Table ────────────────────────────────────────────────────────────── */}
       <div className="overflow-hidden rounded-[10px] border bg-card">
         <div className="overflow-x-auto">
-          <div className="min-w-[68rem]">
+          <div className={TABLE_MIN_WIDTH}>
             <div className={`${ROW_GRID} border-b bg-muted/40 px-4 py-2.5`}>
               <Checkbox
                 aria-label="Chọn tất cả"

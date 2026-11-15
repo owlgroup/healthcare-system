@@ -53,62 +53,63 @@ export type BhytOcrResponse = {
 
 const LOW_QUALITY_THRESHOLD = 70;
 const CCCD_EXPECTED_FIELDS = ["id", "name", "dob", "gender", "address"] as const;
+// Back side carries no name/dob/address in plain text — only ID (MRZ), issue date and issuer.
+const CCCD_BACK_EXPECTED_FIELDS = ["id", "issued", "extra"] as const;
 const BHYT_EXPECTED_FIELDS = ["id", "name", "dob", "kcb"] as const;
 
-/** Check OCR quality based on confidence and filled fields. */
-export function checkCccdOcrQuality(response: CccdOcrResponse): OcrQualityResult {
-  const parsed = response.parsed ?? {};
-  const confidence = response.confidence ?? 0;
-
-  const filledFields = CCCD_EXPECTED_FIELDS.filter(
-    (field) => parsed[field]?.trim()
-  );
-  const filledFieldCount = filledFields.length;
-  const totalExpectedFields = CCCD_EXPECTED_FIELDS.length;
-
-  const inferredConfidence = confidence > 0
-    ? confidence
+function assessOcrQuality(
+  parsed: Record<string, unknown>,
+  serverConfidence: number | undefined,
+  expectedFields: readonly string[],
+  lowQualityMessage: string,
+): OcrQualityResult {
+  const filledFieldCount = expectedFields.filter((field) => {
+    const value = parsed[field];
+    return typeof value === "string" && value.trim();
+  }).length;
+  const totalExpectedFields = expectedFields.length;
+  const confidence = serverConfidence && serverConfidence > 0
+    ? serverConfidence
     : Math.round((filledFieldCount / totalExpectedFields) * 100);
-
-  const isLowQuality = inferredConfidence < LOW_QUALITY_THRESHOLD || filledFieldCount < 2;
+  const isLowQuality = confidence < LOW_QUALITY_THRESHOLD || filledFieldCount < 2;
 
   return {
     isLowQuality,
-    confidence: inferredConfidence,
+    confidence,
     filledFieldCount,
     totalExpectedFields,
-    message: isLowQuality
-      ? "Ảnh không đủ rõ. Vui lòng chụp lại hoặc nhập thủ công."
-      : undefined,
+    message: isLowQuality ? lowQualityMessage : undefined,
   };
+}
+
+/** Check CCCD front-side OCR quality based on confidence and filled fields. */
+export function checkCccdOcrQuality(response: CccdOcrResponse): OcrQualityResult {
+  return assessOcrQuality(
+    response.parsed ?? {},
+    response.confidence,
+    CCCD_EXPECTED_FIELDS,
+    "Ảnh không đủ rõ. Vui lòng chụp lại hoặc nhập thủ công.",
+  );
+}
+
+/** Check CCCD back-side OCR quality against the fields printed on the back. */
+export function checkCccdBackOcrQuality(response: CccdOcrResponse): OcrQualityResult {
+  return assessOcrQuality(
+    response.parsed ?? {},
+    response.confidence,
+    CCCD_BACK_EXPECTED_FIELDS,
+    "Ảnh mặt sau không đủ rõ. Vui lòng chụp lại hoặc nhập thủ công.",
+  );
 }
 
 /** Check BHYT OCR quality based on confidence and filled fields. */
 export function checkBhytOcrQuality(response: BhytOcrResponse): OcrQualityResult {
-  const parsed = response.parsed ?? {};
-  const confidence = response.confidence ?? 0;
-
-  const filledFields = BHYT_EXPECTED_FIELDS.filter(
-    (field) => parsed[field]?.trim()
+  return assessOcrQuality(
+    response.parsed ?? {},
+    response.confidence,
+    BHYT_EXPECTED_FIELDS,
+    "Ảnh BHYT không đủ rõ. Vui lòng chụp lại hoặc nhập thủ công.",
   );
-  const filledFieldCount = filledFields.length;
-  const totalExpectedFields = BHYT_EXPECTED_FIELDS.length;
-
-  const inferredConfidence = confidence > 0
-    ? confidence
-    : Math.round((filledFieldCount / totalExpectedFields) * 100);
-
-  const isLowQuality = inferredConfidence < LOW_QUALITY_THRESHOLD || filledFieldCount < 2;
-
-  return {
-    isLowQuality,
-    confidence: inferredConfidence,
-    filledFieldCount,
-    totalExpectedFields,
-    message: isLowQuality
-      ? "Ảnh BHYT không đủ rõ. Vui lòng chụp lại hoặc nhập thủ công."
-      : undefined,
-  };
 }
 
 function getOcrBaseUrl(): string {

@@ -12,7 +12,7 @@ const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 
 const OnboardingPersonal = () => {
   const navigate = useNavigate();
-  const { data, uploadFiles, updatePersonal, updateIdentity, updatePersonalFromOcr, updateIdentityFromOcr, setIdFile, setIdBackFile } =
+  const { data, uploadFiles, updatePersonal, updateIdentity, applyOcrResult, setIdFile, setIdBackFile } =
     useOnboardingForm();
   const [errorMessage, setErrorMessage] = useState("");
   const [isOcrRunning, setIsOcrRunning] = useState(false);
@@ -53,8 +53,7 @@ const OnboardingPersonal = () => {
         throw new Error("Phản hồi OCR không chứa dữ liệu đã phân tích.");
       }
       const { identity, personal } = mapCccdParsedToFormUpdates(parsed);
-      updateIdentityFromOcr(identity);
-      updatePersonalFromOcr(personal);
+      applyOcrResult("front", { identity, personal });
       toast.success("OCR hoàn tất", { description: "Xem lại và chỉnh sửa các trường được gợi ý bên dưới." });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Yêu cầu OCR thất bại.";

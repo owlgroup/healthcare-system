@@ -766,7 +766,7 @@ export default function SoapNoteEditor({
                         ) : (
                           <Sparkles className="h-4 w-4" />
                         )}
-                        Tạo lại SOAP bằng AI LLM
+                        Tạo SOAP
                       </Button>
                     )}
                   </div>
@@ -859,7 +859,7 @@ export default function SoapNoteEditor({
           return error;
         }}
         confirmedIcds={confirmedIcds}
-        exam={editor.exam}
+        soap={editor.formData}
         pinLocked={isDoctorPinLocked(editor.pinLockedUntil)}
       />
 

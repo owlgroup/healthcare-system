@@ -26,6 +26,7 @@ import {
   applyBhytParsedFillEmpty,
   applyCccdParsedFillEmpty,
   checkCccdOcrQuality,
+  checkCccdBackOcrQuality,
   checkBhytOcrQuality,
   type OcrQualityResult,
 } from "@/lib/cccd-ocr";
@@ -195,7 +196,7 @@ export default function AdminCreateProfileDialog({
         }
       } else {
         const json = await fetchOcrSingle(file, "cccd", "front");
-        const quality = checkCccdOcrQuality(json);
+        const quality = type === "back" ? checkCccdBackOcrQuality(json) : checkCccdOcrQuality(json);
         qualitySetter(quality);
 
         if (json.parsed && typeof json.parsed === "object") {

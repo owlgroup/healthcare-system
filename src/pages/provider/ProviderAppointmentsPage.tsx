@@ -22,7 +22,7 @@ import {
   searchDoctorAppointments,
   sendPreConsultReminder,
 } from "@/lib/doctor-appointment-api";
-import { supabase } from "@/lib/supabase";
+import { adminCheckinAppointment } from "@/lib/admin-appointment-api";
 import {
   getAppointmentReadiness,
   getAppointmentReadinessMessage,
@@ -306,8 +306,7 @@ export default function ProviderAppointmentsPage() {
   const doCheckin = async (row: AdminAppointment): Promise<boolean> => {
     setCheckingInId(row.id);
     try {
-      const { error } = await supabase.rpc("admin_checkin_appointment", { p_appointment_id: row.id });
-      if (error) throw error;
+      await adminCheckinAppointment(row.id);
       void refetch();
       return true;
     } catch (e) {

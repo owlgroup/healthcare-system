@@ -16,6 +16,7 @@ import {
   mapBhytParsedToInsuranceUpdates,
   mapCccdParsedToFormUpdates,
   checkCccdOcrQuality,
+  checkCccdBackOcrQuality,
   checkBhytOcrQuality,
   type OcrQualityResult,
 } from "@/lib/cccd-ocr";
@@ -48,9 +49,7 @@ const OnboardingFormPage = () => {
     updatePersonal,
     updateIdentity,
     updateInsurance,
-    updatePersonalFromOcr,
-    updateIdentityFromOcr,
-    updateInsuranceFromOcr,
+    applyOcrResult,
     setAcceptedPrivacy,
     setIdFile,
     setIdBackFile,
@@ -172,8 +171,7 @@ const OnboardingFormPage = () => {
 
       if (json.parsed && typeof json.parsed === "object") {
         const { identity, personal } = mapCccdParsedToFormUpdates(json.parsed);
-        updateIdentityFromOcr(identity);
-        updatePersonalFromOcr(personal);
+        applyOcrResult("front", { identity, personal });
       }
 
       if (!quality.isLowQuality) {
@@ -202,7 +200,7 @@ const OnboardingFormPage = () => {
     setOcrBackQuality(null);
     try {
       const json = await fetchOcrSingle(uploadFiles.idBackFile, "cccd", "front");
-      const quality = checkCccdOcrQuality(json);
+      const quality = checkCccdBackOcrQuality(json);
       setOcrBackQuality(quality);
 
       if (quality.isLowQuality) {
@@ -213,8 +211,7 @@ const OnboardingFormPage = () => {
 
       if (json.parsed && typeof json.parsed === "object") {
         const { identity, personal } = mapCccdParsedToFormUpdates(json.parsed);
-        updateIdentityFromOcr(identity);
-        updatePersonalFromOcr(personal);
+        applyOcrResult("back", { identity, personal });
       }
 
       if (!quality.isLowQuality) {
@@ -228,7 +225,7 @@ const OnboardingFormPage = () => {
         isLowQuality: true,
         confidence: 0,
         filledFieldCount: 0,
-        totalExpectedFields: 5,
+        totalExpectedFields: 3,
         message: "OCR thất bại. Vui lòng chụp lại hoặc nhập thủ công.",
       });
     } finally {
@@ -253,7 +250,7 @@ const OnboardingFormPage = () => {
       }
 
       if (json.parsed && typeof json.parsed === "object") {
-        updateInsuranceFromOcr(mapBhytParsedToInsuranceUpdates(json.parsed));
+        applyOcrResult("bhyt", { insurance: mapBhytParsedToInsuranceUpdates(json.parsed) });
       }
 
       if (!quality.isLowQuality) {

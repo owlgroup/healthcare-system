@@ -3,7 +3,7 @@ import { format, parseISO, differenceInYears } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
 import {
-  Loader2, Heart, Stethoscope, FileText, Pill, Activity, X,
+  Loader2, Heart, FileText, X,
 } from 'lucide-react';
 import {
   Dialog,
@@ -29,9 +29,7 @@ import { activityLogsToVersionHistory } from '@/lib/exam-activity-log';
 import type { SoapIcdCode } from '@/types/emr';
 import ExamVersionHistoryTable from './ExamVersionHistoryTable';
 import SoapVersionDiff from './SoapVersionDiff';
-
-type MedicalHistoryItem = string | { condition?: string; details?: string };
-type MedicationItem = string | { name?: string; dose?: string; frequency?: string };
+import PreConsultationReadOnly from '@/components/emr/PreConsultationReadOnly';
 
 type AppointmentDetail = {
   id: string;
@@ -58,13 +56,6 @@ type AppointmentDetail = {
     height_cm: number | null;
     clinical_note: string | null;
   } | null;
-  pre_consultation: {
-    chief_complaint: string | null;
-    duration: string | null;
-    associated_symptoms: string[] | null;
-    medical_history: MedicalHistoryItem[] | null;
-    current_medications: string | MedicationItem[] | null;
-  } | null;
   examination: {
     id: string;
     s_text: string | null;
@@ -83,29 +74,6 @@ async function safeDecrypt(value: string | null): Promise<string | null> {
   } catch {
     return value;
   }
-}
-
-function formatMedicalHistory(item: MedicalHistoryItem): string {
-  if (typeof item === 'string') return item;
-  if (item && typeof item === 'object') {
-    const parts: string[] = [];
-    if (item.condition) parts.push(item.condition);
-    if (item.details) parts.push(item.details);
-    return parts.join(' - ') || '—';
-  }
-  return '—';
-}
-
-function formatMedication(item: MedicationItem): string {
-  if (typeof item === 'string') return item;
-  if (item && typeof item === 'object') {
-    const parts: string[] = [];
-    if (item.name) parts.push(item.name);
-    if (item.dose) parts.push(item.dose);
-    if (item.frequency) parts.push(`(${item.frequency})`);
-    return parts.join(' ') || '—';
-  }
-  return '—';
 }
 
 type Props = {
@@ -191,12 +159,6 @@ export default function AppointmentDetailDialog({ appointmentId, open, onOpenCha
           .limit(1)
           .maybeSingle();
 
-        const { data: preConsult } = await supabase
-          .from('pre_consultations')
-          .select('*')
-          .eq('appointment_id', appointmentId)
-          .maybeSingle();
-
         const { data: exam } = await supabase
           .from('medical_examinations')
           .select('id, s_text, o_text, a_text, p_text, status')
@@ -229,14 +191,12 @@ export default function AppointmentDetailDialog({ appointmentId, open, onOpenCha
 
         const [
           decryptedPhone,
-          decryptedChiefComplaint,
           decryptedSText,
           decryptedOText,
           decryptedAText,
           decryptedPText,
         ] = await Promise.all([
           safeDecrypt(pt?.phone_number ?? null),
-          safeDecrypt(preConsult?.chief_complaint ?? null),
           safeDecrypt(exam?.s_text ?? null),
           safeDecrypt(exam?.o_text ?? null),
           safeDecrypt(exam?.a_text ?? null),
@@ -268,13 +228,6 @@ export default function AppointmentDetailDialog({ appointmentId, open, onOpenCha
               weight_kg: vitals.weight_kg,
               height_cm: vitals.height_cm,
               clinical_note: vitals.clinical_note,
-            } : null,
-            pre_consultation: preConsult ? {
-              chief_complaint: decryptedChiefComplaint,
-              duration: preConsult.duration,
-              associated_symptoms: preConsult.associated_symptoms,
-              medical_history: preConsult.medical_history,
-              current_medications: preConsult.current_medications,
             } : null,
             examination: exam ? {
               id: exam.id,
@@ -783,77 +736,7 @@ export default function AppointmentDetailDialog({ appointmentId, open, onOpenCha
 
                 {/* Pre-consultation Tab */}
                 <TabsContent value="pre-consult">
-                  {data.pre_consultation ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Chief Complaint */}
-                      <div className="bg-red-50 rounded-xl p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Stethoscope className="h-4 w-4 text-red-500" />
-                          <span className="text-xs font-semibold text-red-600 uppercase">Triệu chứng chính</span>
-                        </div>
-                        <p className="font-medium">{data.pre_consultation.chief_complaint ?? '—'}</p>
-                        {data.pre_consultation.duration && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Thời gian: {data.pre_consultation.duration}
-                          </p>
-                        )}
-                        {data.pre_consultation.associated_symptoms && data.pre_consultation.associated_symptoms.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            <span className="text-xs text-muted-foreground">Đi kèm:</span>
-                            {data.pre_consultation.associated_symptoms.map((s, i) => (
-                              <span key={i} className="px-2 py-0.5 bg-white rounded text-xs border">
-                                {s}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Medical History & Medications */}
-                      <div className="space-y-3">
-                        {data.pre_consultation.medical_history && data.pre_consultation.medical_history.length > 0 && (
-                          <div className="bg-blue-50 rounded-xl p-4">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Activity className="h-4 w-4 text-blue-500" />
-                              <span className="text-xs font-semibold text-blue-600 uppercase">Bệnh sử</span>
-                            </div>
-                            <ul className="text-sm space-y-1">
-                              {data.pre_consultation.medical_history.map((h, i) => (
-                                <li key={i}>• {formatMedicalHistory(h)}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        <div className="bg-green-50 rounded-xl p-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Pill className="h-4 w-4 text-green-500" />
-                            <span className="text-xs font-semibold text-green-600 uppercase">Thuốc đang dùng</span>
-                          </div>
-                          {(() => {
-                            const meds = data.pre_consultation.current_medications;
-                            if (!meds) {
-                              return <p className="text-sm text-green-600 italic">Không dùng thuốc</p>;
-                            }
-                            if (typeof meds === 'string') {
-                              return <p className="text-sm">{meds}</p>;
-                            }
-                            if (Array.isArray(meds) && meds.length > 0) {
-                              return (
-                                <ul className="text-sm space-y-1">
-                                  {meds.map((m, i) => (
-                                    <li key={i}>• {formatMedication(m)}</li>
-                                  ))}
-                                </ul>
-                              );
-                            }
-                            return <p className="text-sm text-green-600 italic">Không dùng thuốc</p>;
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Chưa có dữ liệu khai báo y tế.</p>
-                  )}
+                  <PreConsultationReadOnly appointmentId={data.id} />
                 </TabsContent>
 
                 {/* Version History Tab */}

@@ -1,10 +1,11 @@
-import { Bell, Menu } from "lucide-react";
+import { Bell, LogOut, Menu } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { useMyPatientProfile } from "@/hooks/useMyPatientProfile";
+import { usePortalLogout } from "@/hooks/use-portal-logout";
 import { isPatientMenuActive, PATIENT_MENU_GROUPS } from "@/config/patient-menu";
 
 function getPageTitle(pathname: string): string {
@@ -23,6 +24,7 @@ const TopNav = () => {
   const [open, setOpen] = useState(false);
   const { session } = useAuth();
   const { data: profile } = useMyPatientProfile();
+  const logout = usePortalLogout();
 
   const displayName =
     profile?.full_name?.trim() ||
@@ -50,7 +52,7 @@ const TopNav = () => {
         {/* Mobile hamburger */}
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <button className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors">
+            <button aria-label="Mở menu" className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors">
               <Menu className="h-5 w-5 text-slate-700" />
             </button>
           </SheetTrigger>
@@ -101,6 +103,17 @@ const TopNav = () => {
                     <div className="text-xs text-slate-500 truncate">{session?.user?.email}</div>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    void logout();
+                  }}
+                  className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[15px] font-medium text-red-600 transition-colors hover:bg-red-50"
+                >
+                  <LogOut className="h-[18px] w-[18px]" aria-hidden="true" />
+                  Đăng xuất
+                </button>
               </div>
             </div>
           </SheetContent>
