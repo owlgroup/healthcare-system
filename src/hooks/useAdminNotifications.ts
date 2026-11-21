@@ -33,6 +33,10 @@ export type AppointmentNotification = {
   walkIn: boolean;
   createdAt: string;
   read: boolean;
+  kind?: "NEW_APPOINTMENT" | "RESCHEDULED";
+  previousSlotDate?: string | null;
+  previousStartTime?: string | null;
+  reason?: string | null;
 };
 
 async function fetchNotificationDetail(appointmentId: string): Promise<AppointmentNotification | null> {

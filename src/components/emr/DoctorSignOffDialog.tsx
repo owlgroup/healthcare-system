@@ -14,20 +14,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import type { MedicalExamination, SoapIcdCode } from '@/types/emr';
+import type { SoapFormData, SoapIcdCode } from '@/types/emr';
 import { isPinSignLockMessage, PIN_SIGN_LOCK_MESSAGE } from '@/types/emr';
+import { sanitizePinInput } from '@/lib/pin-input';
+
+const SOAP_SECTIONS = [
+  { label: 'S:', field: 's_text' },
+  { label: 'O:', field: 'o_text' },
+  { label: 'A:', field: 'a_text' },
+  { label: 'P:', field: 'p_text' },
+] as const satisfies ReadonlyArray<{ label: string; field: keyof SoapFormData }>;
 
 type DoctorSignOffDialogProps = {
   open: boolean;
   onClose: () => void;
   onSign: (pin: string, ack: boolean) => Promise<string | null>;
   confirmedIcds: SoapIcdCode[];
-  exam: MedicalExamination | null;
+  soap: SoapFormData;
   pinLocked?: boolean;
 };
 
 export default function DoctorSignOffDialog({
-  open, onClose, onSign, confirmedIcds, exam, pinLocked = false,
+  open, onClose, onSign, confirmedIcds, soap, pinLocked = false,
 }: DoctorSignOffDialogProps) {
   const [pin, setPin] = useState('');
   const [showPin, setShowPin] = useState(false);
@@ -98,18 +106,19 @@ export default function DoctorSignOffDialog({
             <p className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
               Tóm tắt SOAP
             </p>
-            {exam?.s_text && (
-              <div>
-                <span className="font-bold text-primary text-xs">S:</span>{' '}
-                <span className="text-xs line-clamp-2">{exam.s_text}</span>
-              </div>
-            )}
-            {exam?.p_text && (
-              <div>
-                <span className="font-bold text-primary text-xs">P:</span>{' '}
-                <span className="text-xs line-clamp-2">{exam.p_text}</span>
-              </div>
-            )}
+            {SOAP_SECTIONS.map(({ label, field }) => {
+              const text = soap[field].trim();
+              return (
+                <div key={field}>
+                  <span className="font-bold text-primary text-xs">{label}</span>{' '}
+                  {text ? (
+                    <span className="text-xs line-clamp-2">{text}</span>
+                  ) : (
+                    <span className="text-xs italic text-muted-foreground">(Chưa nhập)</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div>
@@ -172,10 +181,9 @@ export default function DoctorSignOffDialog({
                 type={showPin ? 'text' : 'password'}
                 inputMode="numeric"
                 pattern="[0-9]*"
-                maxLength={6}
                 value={pin}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
+                  const val = sanitizePinInput(e.target.value);
                   setPin(val);
                   if (!isLocked) setPinError('');
                 }}

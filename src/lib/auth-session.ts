@@ -1,3 +1,4 @@
+import { getEnv } from "@/lib/env";
 import { portalLogout } from "@/lib/portal-auth-api";
 import { supabase } from "@/lib/supabase";
 
@@ -29,7 +30,7 @@ export async function clearAuthStorage(): Promise<void> {
     localStorage.removeItem(key);
   }
 
-  const url = import.meta.env.VITE_SUPABASE_URL;
+  const url = getEnv("VITE_SUPABASE_URL");
   if (url) {
     try {
       const ref = new URL(url).hostname.split(".")[0];

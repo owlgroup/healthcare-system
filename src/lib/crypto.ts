@@ -1,3 +1,4 @@
+import { getEnv } from "@/lib/env";
 /**
  * Encryption/Decryption utility for sensitive data (CCCD, SĐT, medical records)
  * Uses AES-256-GCM (authenticated encryption)
@@ -42,7 +43,7 @@ export function sanitizeSensitiveInput(value: string | null | undefined): string
 let cryptoKey: CryptoKey | null = null;
 
 function getSecretKey(): string {
-  const key = import.meta.env.VITE_ENCRYPTION_SECRET_KEY;
+  const key = getEnv("VITE_ENCRYPTION_SECRET_KEY");
   if (!key) {
     throw new Error('VITE_ENCRYPTION_SECRET_KEY is not defined in environment');
   }

@@ -3,9 +3,11 @@ import {
   ReactNode,
   useContext,
   useMemo,
+  useRef,
   useState,
 } from "react";
-import { mergeOcrFillEmpty } from "@/lib/cccd-ocr";
+import type { OcrFills, OcrSlot } from "@/lib/ocr-refill";
+import { applyOnboardingOcr, type OnboardingOcrUpdates } from "@/lib/onboarding-ocr-refill";
 
 type PersonalData = {
   legalFirstName: string;
@@ -95,9 +97,8 @@ type OnboardingContextValue = {
   updatePersonal: (updates: Partial<PersonalData>) => void;
   updateIdentity: (updates: Partial<IdentityData>) => void;
   updateInsurance: (updates: Partial<InsuranceData>) => void;
-  updatePersonalFromOcr: (updates: Partial<PersonalData>) => void;
-  updateIdentityFromOcr: (updates: Partial<IdentityData>) => void;
-  updateInsuranceFromOcr: (updates: Partial<InsuranceData>) => void;
+  /** Re-OCR of a slot overwrites what that slot filled before (same as doctor's add-patient). */
+  applyOcrResult: (slot: OcrSlot, updates: OnboardingOcrUpdates) => void;
   setAcceptedPrivacy: (value: boolean) => void;
   setIdFile: (file: File | null) => void;
   setIdBackFile: (file: File | null) => void;
@@ -117,6 +118,7 @@ export const OnboardingFormProvider = ({ children }: { children: ReactNode }) =>
   const [data, setData] = useState<OnboardingFormData>(defaultData);
 
   const [uploadFiles, setUploadFiles] = useState<PatientOnboardingUploadFiles>(emptyUploadFiles);
+  const ocrFillsRef = useRef<OcrFills>({});
 
   const value = useMemo<OnboardingContextValue>(
     () => ({
@@ -131,14 +133,14 @@ export const OnboardingFormProvider = ({ children }: { children: ReactNode }) =>
       updateInsurance: (updates) => {
         setData((prev) => ({ ...prev, insurance: { ...prev.insurance, ...updates } }));
       },
-      updatePersonalFromOcr: (updates) => {
-        setData((prev) => ({ ...prev, personal: mergeOcrFillEmpty(prev.personal, updates) }));
-      },
-      updateIdentityFromOcr: (updates) => {
-        setData((prev) => ({ ...prev, identity: mergeOcrFillEmpty(prev.identity, updates) }));
-      },
-      updateInsuranceFromOcr: (updates) => {
-        setData((prev) => ({ ...prev, insurance: mergeOcrFillEmpty(prev.insurance, updates) }));
+      applyOcrResult: (slot, updates) => {
+        // Read the ref outside the updater so a StrictMode double-invoke stays deterministic.
+        const prevFills = ocrFillsRef.current;
+        setData((prev) => {
+          const result = applyOnboardingOcr(prev, prevFills, slot, updates);
+          ocrFillsRef.current = result.fills;
+          return result.data;
+        });
       },
       setAcceptedPrivacy: (value) => {
         setData((prev) => ({ ...prev, acceptedPrivacy: value }));
@@ -155,6 +157,7 @@ export const OnboardingFormProvider = ({ children }: { children: ReactNode }) =>
       resetForm: () => {
         setData(defaultData);
         setUploadFiles(emptyUploadFiles);
+        ocrFillsRef.current = {};
       },
     }),
     [data, uploadFiles],

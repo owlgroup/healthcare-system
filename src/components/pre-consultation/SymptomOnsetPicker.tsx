@@ -39,6 +39,8 @@ type Props = {
   onChange: (value: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  /** Three fields on one row: date, hour, minute. */
+  layout?: "stacked" | "inline";
 };
 
 const CLINIC_HOURS = Array.from({ length: 14 }, (_, i) => 7 + i);
@@ -108,11 +110,15 @@ function calculateDurationText(date: Date | null): string {
   return 'Hôm nay';
 }
 
+const intakeControl =
+  "h-[34px] w-full rounded-[7px] border border-[#E1DDDA] bg-[#FAF9F8] px-2.5 text-sm font-normal text-[#1A1614] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]";
+
 export default function SymptomOnsetPicker({
   value,
   onChange,
   disabled = false,
   placeholder = 'Chọn ngày giờ',
+  layout = "stacked",
 }: Props) {
   const parsed = parseOnsetValue(value);
   const [date, setDate] = useState<Date | undefined>(parsed.date ?? undefined);
@@ -169,6 +175,69 @@ export default function SymptomOnsetPicker({
   const displayValue = date
     ? format(date, 'dd/MM/yyyy', { locale: vi })
     : placeholder;
+
+  if (layout === "inline") {
+    return (
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_100px_100px]">
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs font-medium text-[#4A4440]">Thời gian khởi phát</Label>
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                disabled={disabled}
+                className={`${intakeControl} cursor-pointer text-left disabled:cursor-not-allowed disabled:opacity-60 ${
+                  date ? "" : "text-[#9A928D]"
+                }`}
+              >
+                {date ? format(date, "dd/MM/yyyy", { locale: vi }) : "dd/mm/yyyy"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={date}
+                onSelect={handleDateSelect}
+                locale={vi}
+                disabled={(d) => d > new Date()}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs font-medium text-[#4A4440]">Giờ</Label>
+          <Select value={hour} onValueChange={handleHourChange} disabled={disabled || !date}>
+            <SelectTrigger className={`${intakeControl} cursor-pointer`}>
+              <SelectValue placeholder="--" />
+            </SelectTrigger>
+            <SelectContent>
+              {CLINIC_HOURS.map((h) => (
+                <SelectItem key={h} value={String(h)}>
+                  {String(h).padStart(2, "0")}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs font-medium text-[#4A4440]">Phút</Label>
+          <Select value={minute} onValueChange={handleMinuteChange} disabled={disabled || !date || !hour}>
+            <SelectTrigger className={`${intakeControl} cursor-pointer`}>
+              <SelectValue placeholder="--" />
+            </SelectTrigger>
+            <SelectContent>
+              {MINUTE_OPTIONS.map((m) => (
+                <SelectItem key={m} value={String(m)}>
+                  {String(m).padStart(2, "0")}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

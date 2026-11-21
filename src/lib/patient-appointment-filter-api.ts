@@ -180,3 +180,46 @@ async function searchPatientsOnly(
 
   return { rows, total: count ?? rows.length, error: null };
 }
+
+export type LatestAppointmentSnapshot = {
+  status: string;
+  visitAt: string;
+};
+
+type SlotDate = { slot_date?: string | null } | null;
+
+function readSlotDate(slot: SlotDate | SlotDate[]): string | null {
+  const row = Array.isArray(slot) ? slot[0] : slot;
+  const date = row?.slot_date;
+  return date ? String(date).slice(0, 10) : null;
+}
+
+/** Newest appointment per patient profile, for the admin/doctor patient list. */
+export async function fetchLatestAppointmentByProfile(
+  supabase: SupabaseClient,
+  profileIds: string[],
+): Promise<Map<string, LatestAppointmentSnapshot>> {
+  const latest = new Map<string, LatestAppointmentSnapshot>();
+  if (profileIds.length === 0) return latest;
+
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('profile_id, status, created_at, appointment_slots(slot_date)')
+    .in('profile_id', profileIds);
+
+  if (error || !data) return latest;
+
+  for (const row of data) {
+    const profileId = row.profile_id != null ? String(row.profile_id) : '';
+    if (!profileId) continue;
+    const visitAt =
+      readSlotDate(row.appointment_slots as SlotDate | SlotDate[]) ??
+      (row.created_at ? String(row.created_at).slice(0, 10) : '');
+    const current = latest.get(profileId);
+    if (!current || visitAt > current.visitAt) {
+      latest.set(profileId, { status: String(row.status ?? ''), visitAt });
+    }
+  }
+
+  return latest;
+}

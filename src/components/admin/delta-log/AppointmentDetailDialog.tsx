@@ -3,11 +3,12 @@ import { format, parseISO, differenceInYears } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
 import {
-  Loader2, Heart, Stethoscope, FileText, Pill, ArrowLeft, Activity, History,
+  Loader2, Heart, FileText, X,
 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -28,9 +29,7 @@ import { activityLogsToVersionHistory } from '@/lib/exam-activity-log';
 import type { SoapIcdCode } from '@/types/emr';
 import ExamVersionHistoryTable from './ExamVersionHistoryTable';
 import SoapVersionDiff from './SoapVersionDiff';
-
-type MedicalHistoryItem = string | { condition?: string; details?: string };
-type MedicationItem = string | { name?: string; dose?: string; frequency?: string };
+import PreConsultationReadOnly from '@/components/emr/PreConsultationReadOnly';
 
 type AppointmentDetail = {
   id: string;
@@ -57,13 +56,6 @@ type AppointmentDetail = {
     height_cm: number | null;
     clinical_note: string | null;
   } | null;
-  pre_consultation: {
-    chief_complaint: string | null;
-    duration: string | null;
-    associated_symptoms: string[] | null;
-    medical_history: MedicalHistoryItem[] | null;
-    current_medications: string | MedicationItem[] | null;
-  } | null;
   examination: {
     id: string;
     s_text: string | null;
@@ -82,29 +74,6 @@ async function safeDecrypt(value: string | null): Promise<string | null> {
   } catch {
     return value;
   }
-}
-
-function formatMedicalHistory(item: MedicalHistoryItem): string {
-  if (typeof item === 'string') return item;
-  if (item && typeof item === 'object') {
-    const parts: string[] = [];
-    if (item.condition) parts.push(item.condition);
-    if (item.details) parts.push(item.details);
-    return parts.join(' - ') || '—';
-  }
-  return '—';
-}
-
-function formatMedication(item: MedicationItem): string {
-  if (typeof item === 'string') return item;
-  if (item && typeof item === 'object') {
-    const parts: string[] = [];
-    if (item.name) parts.push(item.name);
-    if (item.dose) parts.push(item.dose);
-    if (item.frequency) parts.push(`(${item.frequency})`);
-    return parts.join(' ') || '—';
-  }
-  return '—';
 }
 
 type Props = {
@@ -190,12 +159,6 @@ export default function AppointmentDetailDialog({ appointmentId, open, onOpenCha
           .limit(1)
           .maybeSingle();
 
-        const { data: preConsult } = await supabase
-          .from('pre_consultations')
-          .select('*')
-          .eq('appointment_id', appointmentId)
-          .maybeSingle();
-
         const { data: exam } = await supabase
           .from('medical_examinations')
           .select('id, s_text, o_text, a_text, p_text, status')
@@ -228,14 +191,12 @@ export default function AppointmentDetailDialog({ appointmentId, open, onOpenCha
 
         const [
           decryptedPhone,
-          decryptedChiefComplaint,
           decryptedSText,
           decryptedOText,
           decryptedAText,
           decryptedPText,
         ] = await Promise.all([
           safeDecrypt(pt?.phone_number ?? null),
-          safeDecrypt(preConsult?.chief_complaint ?? null),
           safeDecrypt(exam?.s_text ?? null),
           safeDecrypt(exam?.o_text ?? null),
           safeDecrypt(exam?.a_text ?? null),
@@ -267,13 +228,6 @@ export default function AppointmentDetailDialog({ appointmentId, open, onOpenCha
               weight_kg: vitals.weight_kg,
               height_cm: vitals.height_cm,
               clinical_note: vitals.clinical_note,
-            } : null,
-            pre_consultation: preConsult ? {
-              chief_complaint: decryptedChiefComplaint,
-              duration: preConsult.duration,
-              associated_symptoms: preConsult.associated_symptoms,
-              medical_history: preConsult.medical_history,
-              current_medications: preConsult.current_medications,
             } : null,
             examination: exam ? {
               id: exam.id,
@@ -343,7 +297,11 @@ export default function AppointmentDetailDialog({ appointmentId, open, onOpenCha
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl h-[90vh] p-0 flex flex-col">
+      <DialogContent
+        hideClose
+        overlayClassName="bg-[rgba(26,22,20,0.32)]"
+        className="flex max-h-[calc(100vh-48px)] w-[min(900px,calc(100vw-32px))] max-w-[900px] flex-col gap-0 overflow-hidden rounded-[14px] border-0 bg-[#F5F4F2] p-0 shadow-[0_24px_64px_rgba(26,22,20,.28)]"
+      >
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -355,67 +313,65 @@ export default function AppointmentDetailDialog({ appointmentId, open, onOpenCha
         ) : (
           <div className="flex flex-col flex-1 min-h-0">
             {/* Header */}
-            <DialogHeader className="p-4 pr-12 border-b border-border">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                    <Stethoscope className="h-5 w-5 text-amber-600" />
+            <DialogHeader className="flex-row items-center gap-3 space-y-0 border-b border-[#E8E5E2] bg-white px-5 py-3.5 text-left">
+              <div className="grid h-[38px] w-[38px] shrink-0 place-items-center rounded-[9px] bg-[#C41740] text-sm font-bold text-white">
+                {(data.patient?.full_name?.trim().split(/\s+/).pop()?.[0] ?? 'H').toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <DialogDescription className="text-[11.5px] text-[#7A726D]">
+                  Khám bệnh{patientAge != null ? ` · ${patientAge} tuổi` : ''}
+                </DialogDescription>
+                <DialogTitle className="truncate text-[15px] font-bold text-[#1A1614]">
+                  {data.patient?.full_name ?? 'N/A'}
+                </DialogTitle>
+              </div>
+              {data.doctor?.full_name && (
+                <div className="flex shrink-0 items-center gap-2 rounded-[18px] border border-[#E1DDDA] py-1 pl-1 pr-2.5">
+                  <div className="grid h-[26px] w-[26px] place-items-center rounded-full bg-[#C41740] text-[10.5px] font-bold text-white">
+                    BS
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap min-w-0">
-                    <DialogTitle className="text-lg font-bold whitespace-nowrap">
-                      Khám bệnh — {data.patient?.full_name ?? 'N/A'}
-                    </DialogTitle>
-                    {data.examination?.status === 'signed' && (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 whitespace-nowrap">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5" />
-                        Đã hoàn thành
-                      </span>
-                    )}
+                  <div className="text-left leading-tight">
+                    <p className="whitespace-nowrap text-xs font-semibold text-[#1A1614]">ThS. BS {data.doctor.full_name}</p>
+                    <p className="whitespace-nowrap text-[10.5px] text-[#7A726D]">
+                      Chuyên khoa {data.doctor.specialty_name ?? 'N/A'}
+                    </p>
                   </div>
                 </div>
-                {data.doctor?.full_name && (
-                  <div className="flex items-center gap-2 bg-white rounded-2xl border-2 border-border pl-1 pr-3 py-1 flex-shrink-0">
-                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
-                      BS
-                    </div>
-                    <div className="text-xs">
-                      <p className="font-semibold text-foreground whitespace-nowrap">ThS. BS {data.doctor.full_name}</p>
-                      <p className="text-muted-foreground whitespace-nowrap">
-                        Chuyên khoa {data.doctor.specialty_name ?? 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                aria-label="Đóng"
+                className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-[7px] border border-[#E1DDDA] bg-white text-base text-[#4A4440] transition-colors duration-200 hover:bg-[#FAF9F8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </DialogHeader>
 
-            {/* Tabs */}
-            <div className="px-6 py-4 flex-1 overflow-y-auto min-h-0">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-3 mb-4 h-12 p-1 bg-white border-2 border-border rounded-lg">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
+            <div className="border-b border-[#E8E5E2] bg-white px-5 py-2.5">
+                <TabsList className="grid h-9 w-full grid-cols-3 gap-0.5 rounded-lg bg-[#EDEAE7] p-[3px]">
                   <TabsTrigger
                     value="versions"
-                    className="flex items-center gap-2 font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
+                    className="h-[30px] rounded-md text-[12.5px] font-semibold text-[#7A726D] shadow-none data-[state=active]:bg-white data-[state=active]:text-[#C41740] data-[state=active]:shadow-[0_1px_2px_rgba(0,0,0,.08)]"
                   >
-                    <History className="h-4 w-4" />
                     Lịch sử phiên bản
                   </TabsTrigger>
                   <TabsTrigger
                     value="vitals"
-                    className="flex items-center gap-2 font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
+                    className="h-[30px] rounded-md text-[12.5px] font-semibold text-[#7A726D] shadow-none data-[state=active]:bg-white data-[state=active]:text-[#C41740] data-[state=active]:shadow-[0_1px_2px_rgba(0,0,0,.08)]"
                   >
-                    <Heart className="h-4 w-4" />
                     Sinh hiệu
                   </TabsTrigger>
                   <TabsTrigger
                     value="pre-consult"
-                    className="flex items-center gap-2 font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md"
+                    className="h-[30px] rounded-md text-[12.5px] font-semibold text-[#7A726D] shadow-none data-[state=active]:bg-white data-[state=active]:text-[#C41740] data-[state=active]:shadow-[0_1px_2px_rgba(0,0,0,.08)]"
                   >
-                    <FileText className="h-4 w-4" />
                     Khai báo y tế
                   </TabsTrigger>
                 </TabsList>
-
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                 <div>
 
                 {/* Vital Signs Tab */}
@@ -780,77 +736,7 @@ export default function AppointmentDetailDialog({ appointmentId, open, onOpenCha
 
                 {/* Pre-consultation Tab */}
                 <TabsContent value="pre-consult">
-                  {data.pre_consultation ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Chief Complaint */}
-                      <div className="bg-red-50 rounded-xl p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Stethoscope className="h-4 w-4 text-red-500" />
-                          <span className="text-xs font-semibold text-red-600 uppercase">Triệu chứng chính</span>
-                        </div>
-                        <p className="font-medium">{data.pre_consultation.chief_complaint ?? '—'}</p>
-                        {data.pre_consultation.duration && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Thời gian: {data.pre_consultation.duration}
-                          </p>
-                        )}
-                        {data.pre_consultation.associated_symptoms && data.pre_consultation.associated_symptoms.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            <span className="text-xs text-muted-foreground">Đi kèm:</span>
-                            {data.pre_consultation.associated_symptoms.map((s, i) => (
-                              <span key={i} className="px-2 py-0.5 bg-white rounded text-xs border">
-                                {s}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Medical History & Medications */}
-                      <div className="space-y-3">
-                        {data.pre_consultation.medical_history && data.pre_consultation.medical_history.length > 0 && (
-                          <div className="bg-blue-50 rounded-xl p-4">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Activity className="h-4 w-4 text-blue-500" />
-                              <span className="text-xs font-semibold text-blue-600 uppercase">Bệnh sử</span>
-                            </div>
-                            <ul className="text-sm space-y-1">
-                              {data.pre_consultation.medical_history.map((h, i) => (
-                                <li key={i}>• {formatMedicalHistory(h)}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        <div className="bg-green-50 rounded-xl p-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Pill className="h-4 w-4 text-green-500" />
-                            <span className="text-xs font-semibold text-green-600 uppercase">Thuốc đang dùng</span>
-                          </div>
-                          {(() => {
-                            const meds = data.pre_consultation.current_medications;
-                            if (!meds) {
-                              return <p className="text-sm text-green-600 italic">Không dùng thuốc</p>;
-                            }
-                            if (typeof meds === 'string') {
-                              return <p className="text-sm">{meds}</p>;
-                            }
-                            if (Array.isArray(meds) && meds.length > 0) {
-                              return (
-                                <ul className="text-sm space-y-1">
-                                  {meds.map((m, i) => (
-                                    <li key={i}>• {formatMedication(m)}</li>
-                                  ))}
-                                </ul>
-                              );
-                            }
-                            return <p className="text-sm text-green-600 italic">Không dùng thuốc</p>;
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Chưa có dữ liệu khai báo y tế.</p>
-                  )}
+                  <PreConsultationReadOnly appointmentId={data.id} />
                 </TabsContent>
 
                 {/* Version History Tab */}
@@ -942,19 +828,20 @@ export default function AppointmentDetailDialog({ appointmentId, open, onOpenCha
                   )}
                 </TabsContent>
                 </div>
-              </Tabs>
             </div>
+            </Tabs>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-border bg-background flex-shrink-0">
+            <div className="flex shrink-0 items-center gap-2 border-t border-[#E8E5E2] bg-white px-5 py-3">
               <button
                 type="button"
                 onClick={() => onOpenChange(false)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border text-sm font-medium hover:bg-muted transition-colors"
+                className="h-[34px] cursor-pointer rounded-[7px] border border-[#D9D5D1] bg-white px-3 text-sm font-medium text-[#1A1614] transition-colors duration-200 hover:bg-[#FAF9F8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]"
               >
-                <ArrowLeft className="h-4 w-4" />
-                Quay lại danh sách
+                ← Quay lại danh sách
               </button>
+              <span className="flex-1" />
+              <span className="text-[11.5px] text-[#7A726D]">Esc để đóng</span>
             </div>
           </div>
         )}

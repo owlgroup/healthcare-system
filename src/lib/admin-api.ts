@@ -1,3 +1,4 @@
+import { getEnv } from "@/lib/env";
 import {
   forceAuthLogout,
   fetchWithAuthRetry,
@@ -5,9 +6,9 @@ import {
 } from "@/lib/auth-refresh";
 
 const functionsBase = () => {
-  const override = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
+  const override = getEnv("VITE_SUPABASE_FUNCTIONS_URL");
   if (override) return override.replace(/\/$/, "");
-  const url = import.meta.env.VITE_SUPABASE_URL;
+  const url = getEnv("VITE_SUPABASE_URL");
   if (!url) throw new Error("VITE_SUPABASE_URL is not configured");
   return `${url.replace(/\/$/, "")}/functions/v1`;
 };
@@ -31,7 +32,7 @@ async function postAdmin<T>(path: string, payload: unknown): Promise<T> {
     await forceAuthLogout();
   }
 
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const anonKey = getEnv("VITE_SUPABASE_ANON_KEY");
   const res = await fetchWithAuthRetry(`${functionsBase()}/${path}`, {
     method: "POST",
     headers: {

@@ -1,11 +1,4 @@
-import { useState } from "react";
-import { Trash2, Plus, FileText, MoreVertical } from "lucide-react";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Trash2 } from "lucide-react";
 import type { QuestionnaireSection, SectionRole } from "@/types/questionnaire";
 import { SECTION_ROLE_LABELS } from "@/types/questionnaire";
 import QuestionEditor from "./QuestionEditor";
@@ -23,7 +16,6 @@ type Props = {
 export default function SectionEditor({
   section, sectionIndex, allSections, onChange, onRemove, disabled,
 }: Props) {
-  const [metaOpen, setMetaOpen] = useState(false);
   const sectionLabel = String.fromCharCode(65 + sectionIndex);
 
   function patch(fields: Partial<QuestionnaireSection>) {
@@ -54,82 +46,58 @@ export default function SectionEditor({
   const nextQIndex = section.questions.length + 1;
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm space-y-5">
-      {/* Section header */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-pink-100">
-            <FileText className="h-5 w-5 text-primary" strokeWidth={1.75} />
-          </div>
-          <div className="min-w-0 space-y-1">
-            <input
-              value={section.title}
-              disabled={disabled}
-              onChange={(e) => patch({ title: e.target.value })}
-              placeholder={`Phần ${sectionLabel}: Bệnh nhân tự khai báo`}
-              className="w-full bg-transparent text-base font-bold text-foreground focus:outline-none disabled:opacity-60"
-            />
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex rounded-md bg-teal-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-700">
-                Vai trò: {SECTION_ROLE_LABELS[section.role]}
-              </span>
-              {section.key ? (
-                <span className="text-[10px] font-mono text-muted-foreground">
-                  Mã nội bộ: {section.key}
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+    <div className="flex flex-col gap-3 rounded-xl border border-[#E8E5E2] bg-white p-4">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <span className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[9px] bg-[#FCEBEF] text-sm font-bold text-[#C41740]">
+          {sectionLabel}
+        </span>
+        <input
+          value={section.title}
+          disabled={disabled}
+          onChange={(e) => patch({ title: e.target.value })}
+          placeholder={`Phần ${sectionLabel}: tên phần`}
+          className="h-9 min-w-[160px] flex-1 rounded-lg border border-transparent bg-transparent px-2.5 text-[15px] font-semibold text-[#1A1614] focus-visible:border-[#E1DDDA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:opacity-60"
+        />
+        <span className="text-xs text-[#7A726D]">Người trả lời</span>
+        {(Object.entries(SECTION_ROLE_LABELS) as [SectionRole, string][]).map(([value, label]) => {
+          const selected = section.role === value;
+          return (
             <button
+              key={value}
               type="button"
-              className="rounded-lg p-2 text-muted-foreground hover:bg-muted"
-              aria-label="Tùy chọn phần"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setMetaOpen((v) => !v)}>
-              Cấu hình phần
-            </DropdownMenuItem>
-            <DropdownMenuItem
               disabled={disabled}
-              className="text-destructive focus:text-destructive"
-              onClick={onRemove}
+              onClick={() => patch({ role: value })}
+              className={`h-[30px] cursor-pointer rounded-full border px-3 text-[12.5px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:cursor-not-allowed disabled:opacity-50 ${
+                selected
+                  ? "border-[#C41740] bg-[#FFF8F9] font-semibold text-[#C41740]"
+                  : "border-[#E1DDDA] bg-white font-medium text-[#4A4440] hover:border-[#C41740]"
+              }`}
             >
-              Xóa phần
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              {label}
+            </button>
+          );
+        })}
+        <input
+          value={section.key}
+          disabled={disabled}
+          onChange={(e) => patch({ key: e.target.value })}
+          placeholder="Mã nội bộ"
+          aria-label="Mã nội bộ"
+          className="h-8 w-28 rounded-lg border border-[#E1DDDA] bg-[#FAF9F8] px-2 font-mono text-[11px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:opacity-60"
+        />
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onRemove}
+          title="Xóa phần"
+          aria-label="Xóa phần"
+          className="grid h-[30px] w-[30px] cursor-pointer place-items-center rounded-[7px] text-[#C41740] transition-colors duration-200 hover:bg-[#FCEBEF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
       </div>
 
-      {metaOpen && (
-        <div className="rounded-xl border border-dashed border-border/80 bg-muted/20 p-4 space-y-3">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              value={section.key}
-              disabled={disabled}
-              onChange={(e) => patch({ key: e.target.value })}
-              placeholder="Mã nội bộ (VD: PHQ8_PHAN_A)"
-              className="flex-1 rounded-xl border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
-            />
-            <Select value={section.role} disabled={disabled} onValueChange={(v) => patch({ role: v as SectionRole })}>
-              <SelectTrigger className="sm:w-44"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(SECTION_ROLE_LABELS).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      )}
-
-      {/* Questions */}
-      <div className="space-y-4">
+      <div className="flex flex-col gap-2.5">
         {section.questions.map((q, qi) => (
           <QuestionEditor
             key={q.id}
@@ -150,10 +118,9 @@ export default function SectionEditor({
         type="button"
         disabled={disabled}
         onClick={addQuestion}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/80 py-4 text-sm font-semibold text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5 disabled:opacity-40 transition-colors"
+        className="h-11 cursor-pointer rounded-[10px] border-[1.5px] border-dashed border-[#D9D5D1] text-sm font-semibold text-[#57524E] transition-colors duration-200 hover:border-[#C41740] hover:text-[#C41740] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <Plus className="h-4 w-4" />
-        Thêm câu hỏi tiếp theo (Q{nextQIndex})
+        + Thêm câu hỏi tiếp theo (Q{nextQIndex})
       </button>
     </div>
   );

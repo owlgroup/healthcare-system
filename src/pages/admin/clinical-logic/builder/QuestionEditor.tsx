@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Trash2, Plus, Copy, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, Copy, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -61,90 +61,76 @@ export default function QuestionEditor({
 
   const otherQuestions = allSections.flatMap((s) => s.questions).filter((q) => q.id !== question.id);
 
+  function setType(nextType: QuestionType) {
+    if (nextType === "SCALE") {
+      onChange({
+        ...question,
+        type: nextType,
+        options: [],
+        skip_logic: [],
+        config: { min: question.config.min ?? 0, max: question.config.max ?? 10 },
+      });
+      return;
+    }
+    patch({ type: nextType });
+  }
+
+  const iconBtn = "grid h-[30px] w-[30px] cursor-pointer place-items-center rounded-[7px] text-[#7A726D] transition-colors duration-200 hover:bg-[#F0EEEC] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:cursor-not-allowed disabled:opacity-40";
+
   return (
-    <div className="rounded-xl border border-border/60 bg-muted/20 overflow-hidden">
-      {/* Magenta accent + header */}
-      <div className="flex border-l-4 border-l-primary">
-        <div className="flex-1 p-4 space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <span className="inline-flex rounded-md bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">
-              Q{questionIndex}: {QUESTION_TYPE_LABELS[question.type]}
+    <div className="flex flex-col gap-2.5 rounded-[10px] border border-[#ECE8E5] py-3.5 pl-[18px] pr-3.5 shadow-[inset_3px_0_0_#C41740]">
+          <div className="flex items-center gap-2">
+            <span className="rounded-md bg-[#C41740] px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
+              Q{questionIndex} · {QUESTION_TYPE_LABELS[question.type]}
             </span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={onDuplicate}
-                title="Sao chép câu hỏi"
-                className="rounded-lg p-2 text-muted-foreground hover:bg-muted disabled:opacity-40"
-              >
-                <Copy className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={onRemove}
-                title="Xóa câu hỏi"
-                className="rounded-lg p-2 text-muted-foreground hover:bg-red-50 hover:text-red-500 disabled:opacity-40"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
+            <span className="flex-1" />
+            <button type="button" disabled={disabled} onClick={onDuplicate} title="Nhân bản" aria-label="Nhân bản" className={iconBtn}>
+              <Copy className="h-3.5 w-3.5" />
+            </button>
+            <button type="button" disabled={disabled} onClick={onRemove} title="Xóa câu hỏi" aria-label="Xóa câu hỏi" className={`${iconBtn} hover:bg-[#FCEBEF] hover:text-[#C41740]`}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           </div>
 
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
-              Nội dung câu hỏi
-            </label>
-            <div className="flex gap-2">
-              <Select
-                value={question.type}
-                disabled={disabled}
-                onValueChange={(v) => {
-                  const nextType = v as QuestionType;
-                  if (nextType === "SCALE") {
-                    onChange({
-                      ...question,
-                      type: nextType,
-                      options: [],
-                      skip_logic: [],
-                      config: {
-                        min: question.config.min ?? 0,
-                        max: question.config.max ?? 10,
-                      },
-                    });
-                  } else {
-                    patch({ type: nextType });
-                  }
-                }}
-              >
-                <SelectTrigger className="w-36 shrink-0 h-10 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {(Object.entries(QUESTION_TYPE_LABELS) as [QuestionType, string][]).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <input
-                value={question.text}
-                disabled={disabled}
-                onChange={(e) => patch({ text: e.target.value })}
-                placeholder={`Q${questionIndex}: Nội dung câu hỏi...`}
-                className="flex-1 rounded-xl border border-sky-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 disabled:opacity-60"
-              />
-            </div>
+          <input
+            value={question.text}
+            disabled={disabled}
+            onChange={(e) => patch({ text: e.target.value })}
+            placeholder={`Q${questionIndex}: Nội dung câu hỏi…`}
+            className={`h-[38px] rounded-lg border bg-[#FAF9F8] px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:opacity-60 ${
+              question.text.trim() ? "border-[#E1DDDA]" : "border-[#F0D9A8]"
+            }`}
+          />
+
+          <div className="flex flex-wrap gap-1.5">
+            {(Object.entries(QUESTION_TYPE_LABELS) as [QuestionType, string][]).map(([value, label]) => {
+              const selected = question.type === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => setType(value)}
+                  className={`h-[30px] cursor-pointer rounded-full border px-3 text-[12.5px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:cursor-not-allowed disabled:opacity-50 ${
+                    selected
+                      ? "border-[#C41740] bg-[#FFF8F9] font-semibold text-[#C41740]"
+                      : "border-[#E1DDDA] bg-white font-medium text-[#4A4440] hover:border-[#C41740]"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
 
           {isChoice && (
-            <div className="space-y-2">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <div className="flex flex-col gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[#7A726D]">
                 Lựa chọn trả lời &amp; điểm
               </p>
               {question.options.map((opt, oi) => (
-                <div
-                  key={opt.id}
-                  className="flex items-center gap-3 rounded-xl border border-border/50 bg-white px-4 py-3"
-                >
+                <div key={opt.id} className="flex items-center gap-2">
+                  <span className="w-[22px] shrink-0 text-right text-[11.5px] text-[#9A928D]">{oi + 1}</span>
                   <input
                     value={opt.label}
                     disabled={disabled}
@@ -152,28 +138,30 @@ export default function QuestionEditor({
                       options: question.options.map((o) => o.id === opt.id ? { ...o, label: e.target.value } : o),
                     })}
                     placeholder="Nhãn lựa chọn"
-                    className="flex-1 min-w-0 bg-transparent text-sm focus:outline-none disabled:opacity-60"
+                    className={`h-[34px] min-w-0 flex-1 rounded-lg border bg-white px-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:opacity-60 ${
+                      opt.label.trim() ? "border-[#E1DDDA]" : "border-[#F0D9A8]"
+                    }`}
                   />
-                  <span className="shrink-0 text-[10px] text-muted-foreground">
-                    Lựa chọn {oi + 1}
-                  </span>
-                  <div className="flex shrink-0 items-center gap-1.5 rounded-lg bg-muted/50 px-2 py-1">
-                    <span className="text-[10px] font-medium text-muted-foreground">Điểm</span>
+                  <label className="flex h-[34px] shrink-0 items-center gap-1.5 rounded-lg border border-[#E1DDDA] bg-[#FAF9F8] pl-2.5 pr-1">
+                    <span className="text-[11.5px] text-[#7A726D]">Điểm</span>
                     <input
                       type="number"
                       value={opt.score ?? 0}
                       disabled={disabled}
+                      aria-label={`Điểm lựa chọn ${oi + 1}`}
                       onChange={(e) => patch({
                         options: question.options.map((o) => o.id === opt.id ? { ...o, score: Number(e.target.value) } : o),
                       })}
-                      className="w-10 bg-transparent text-sm font-bold text-red-600 focus:outline-none disabled:opacity-60 text-center"
+                      className="w-11 border-0 bg-transparent text-center text-sm font-bold text-[#C41740] focus-visible:outline-none disabled:opacity-60"
                     />
-                  </div>
+                  </label>
                   <button
                     type="button"
                     disabled={disabled}
                     onClick={() => removeOption(opt.id)}
-                    className="p-1 text-muted-foreground hover:text-destructive disabled:opacity-40"
+                    title="Xóa lựa chọn"
+                    aria-label="Xóa lựa chọn"
+                    className={iconBtn}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -183,21 +171,23 @@ export default function QuestionEditor({
                 type="button"
                 disabled={disabled}
                 onClick={addOption}
-                className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline disabled:opacity-40"
+                className="cursor-pointer self-start pl-[30px] text-[12.5px] font-semibold text-[#C41740] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <Plus className="h-3 w-3" /> Thêm lựa chọn
+                + Thêm lựa chọn
               </button>
             </div>
           )}
 
           {question.type === "SCALE" && (
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <input type="number" disabled={disabled} value={(question.config.min as number) ?? 0}
                 onChange={(e) => patchConfig({ min: Number(e.target.value) })}
-                placeholder="Tối thiểu" className="w-28 rounded-xl border px-3 py-2 text-sm disabled:opacity-60" />
+                aria-label="Thang điểm tối thiểu"
+                placeholder="Tối thiểu" className="h-[34px] w-28 rounded-lg border border-[#E1DDDA] bg-[#FAF9F8] px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:opacity-60" />
               <input type="number" disabled={disabled} value={(question.config.max as number) ?? 10}
                 onChange={(e) => patchConfig({ max: Number(e.target.value) })}
-                placeholder="Tối đa" className="w-28 rounded-xl border px-3 py-2 text-sm disabled:opacity-60" />
+                aria-label="Thang điểm tối đa"
+                placeholder="Tối đa" className="h-[34px] w-28 rounded-lg border border-[#E1DDDA] bg-[#FAF9F8] px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:opacity-60" />
             </div>
           )}
 
@@ -206,40 +196,38 @@ export default function QuestionEditor({
               <input disabled={disabled} value={(question.config.rows as string) ?? ""}
                 onChange={(e) => patchConfig({ rows: e.target.value })}
                 placeholder="Các hàng (phân cách bởi dấu phẩy)"
-                className="rounded-xl border px-3 py-2 text-sm disabled:opacity-60" />
+                className="h-[34px] rounded-lg border border-[#E1DDDA] bg-[#FAF9F8] px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:opacity-60" />
               <input disabled={disabled} value={(question.config.cols as string) ?? ""}
                 onChange={(e) => patchConfig({ cols: e.target.value })}
                 placeholder="Các cột (phân cách bởi dấu phẩy)"
-                className="rounded-xl border px-3 py-2 text-sm disabled:opacity-60" />
+                className="h-[34px] rounded-lg border border-[#E1DDDA] bg-[#FAF9F8] px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:opacity-60" />
             </div>
           )}
 
           {isChoice && (
-            <div className="rounded-xl border border-teal-200 bg-teal-50/50 overflow-hidden">
+            <div className="overflow-hidden rounded-[10px] border border-[#CFE9DF] bg-[#F4FBF8]">
               <button
                 type="button"
                 onClick={() => setSkipOpen((v) => !v)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-teal-700"
+                className="flex w-full cursor-pointer items-center justify-between px-3.5 py-2.5 text-left text-[13px] font-semibold text-[#0F6B4F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F6B4F]"
               >
                 <span>
                   Quy tắc bỏ qua
-                  {question.skip_logic.length > 0 && (
-                    <span className="font-normal text-teal-600/80">
-                      {" "}({question.skip_logic.length} quy tắc)
-                    </span>
-                  )}
+                  <span className="font-medium text-[#0F6B4F]/80">
+                    {" "}({question.skip_logic.length} quy tắc)
+                  </span>
                 </span>
                 {skipOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </button>
               {skipOpen && (
-                <div className="border-t border-teal-200/60 px-4 pb-4 pt-2 space-y-2">
+                <div className="flex flex-col gap-2 border-t border-[#CFE9DF] px-3.5 pb-3 pt-2">
                   {question.skip_logic.map((rule, ri) => (
                     <div key={ri} className="flex flex-wrap items-center gap-2 text-sm">
-                      <span className="text-teal-700/80 text-xs">Nếu chọn</span>
+                      <span className="text-xs text-[#0F6B4F]">Nếu chọn</span>
                       <Select disabled={disabled} value={rule.if_option_id} onValueChange={(v) => patch({
                         skip_logic: question.skip_logic.map((r, i) => i === ri ? { ...r, if_option_id: v } : r),
                       })}>
-                        <SelectTrigger className="h-8 w-36 text-xs bg-white"><SelectValue placeholder="Lựa chọn" /></SelectTrigger>
+                        <SelectTrigger className="h-8 w-36 border-[#CFE9DF] bg-white text-xs"><SelectValue placeholder="Lựa chọn" /></SelectTrigger>
                         <SelectContent>
                           {question.options.map((o, oi) => (
                             <SelectItem key={o.id} value={o.id}>{optionDisplayLabel(o.label, oi)}</SelectItem>
@@ -249,7 +237,7 @@ export default function QuestionEditor({
                       <Select disabled={disabled} value={rule.action} onValueChange={(v) => patch({
                         skip_logic: question.skip_logic.map((r, i) => i === ri ? { ...r, action: v as typeof r.action, target_id: "" } : r),
                       })}>
-                        <SelectTrigger className="h-8 w-40 text-xs bg-white"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-8 w-40 border-[#CFE9DF] bg-white text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="GOTO_QUESTION">Chuyển đến câu hỏi</SelectItem>
                           <SelectItem value="SKIP_SECTION">Bỏ qua phần</SelectItem>
@@ -258,7 +246,7 @@ export default function QuestionEditor({
                       <Select disabled={disabled} value={rule.target_id} onValueChange={(v) => patch({
                         skip_logic: question.skip_logic.map((r, i) => i === ri ? { ...r, target_id: v } : r),
                       })}>
-                        <SelectTrigger className="h-8 w-48 text-xs bg-white"><SelectValue placeholder="Đích đến" /></SelectTrigger>
+                        <SelectTrigger className="h-8 w-48 border-[#CFE9DF] bg-white text-xs"><SelectValue placeholder="Đích đến" /></SelectTrigger>
                         <SelectContent>
                           {rule.action === "GOTO_QUESTION"
                             ? otherQuestions.map((q, qi) => (
@@ -271,7 +259,7 @@ export default function QuestionEditor({
                       </Select>
                       <button type="button" disabled={disabled} onClick={() => patch({
                         skip_logic: question.skip_logic.filter((_, i) => i !== ri),
-                      })} className="p-1 text-teal-700 hover:text-red-500 disabled:opacity-40">
+                      })} className="grid h-7 w-7 cursor-pointer place-items-center rounded-md text-[#0F6B4F] hover:bg-white hover:text-[#C41740] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F6B4F] disabled:opacity-40" aria-label="Xóa quy tắc">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
@@ -280,16 +268,14 @@ export default function QuestionEditor({
                     type="button"
                     disabled={disabled || question.options.length === 0}
                     onClick={addSkipRule}
-                    className="flex items-center gap-1 text-xs font-semibold text-teal-700 hover:underline disabled:opacity-40"
+                    className="cursor-pointer self-start text-[12.5px] font-semibold text-[#0F6B4F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F6B4F] disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    <Plus className="h-3 w-3" /> Thêm quy tắc
+                    + Thêm quy tắc
                   </button>
                 </div>
               )}
             </div>
           )}
-        </div>
-      </div>
     </div>
   );
 }

@@ -11,12 +11,17 @@ import type { PreConsultationBundle } from '@/types/pre-consultation';
 import PreConsultationEmptyState from './PreConsultationEmptyState';
 import PatientPreConsultationPanel from './PatientPreConsultationPanel';
 import DoctorExamPreConsultationForm from './DoctorExamPreConsultationForm';
+import { useAuth } from '@/hooks/use-auth';
 
 type Props = {
   appointmentId: string;
   appointmentStatus?: string;
   editable?: boolean;
   onSaved?: () => void;
+  /** Stacked intake cards used by the admin appointment dialog. */
+  layout?: "columns" | "intake";
+  onRemind?: () => void;
+  reminding?: boolean;
 };
 
 const CLOSED_STATUSES = new Set(['CANCELLED', 'COMPLETED', 'NO_SHOW']);
@@ -26,11 +31,16 @@ export default function PreConsultationDualView({
   appointmentStatus,
   editable = true,
   onSaved,
+  layout = "columns",
+  onRemind,
+  reminding = false,
 }: Props) {
+  const { role } = useAuth();
   const [bundle, setBundle] = useState<PreConsultationBundle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showEditor, setShowEditor] = useState(false);
+  const canEditDoctorForm = role === 'doctor' || role === 'admin';
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -79,7 +89,9 @@ export default function PreConsultationDualView({
     );
   }
 
-  if (!showEditor && !hasDoctorContent && !patientSubmitted) {
+  const showForm = layout === "intake" || showEditor || hasDoctorContent || patientSubmitted;
+
+  if (!showForm) {
     return (
       <div className="space-y-4">
         <PreConsultationEmptyState
@@ -95,27 +107,48 @@ export default function PreConsultationDualView({
     );
   }
 
+  const patientPanel = (
+    <PatientPreConsultationPanel
+      record={patientSubmitted ? bundle?.patient ?? null : null}
+      creatorName={bundle?.patientCreatorName}
+      submittedAt={bundle?.patient?.submitted_at}
+      isDraft={patientDraft && !patientSubmitted}
+      variant={layout === "intake" ? "intake" : "default"}
+      onRemind={onRemind}
+      reminding={reminding}
+    />
+  );
+
+  const doctorForm = (
+    <DoctorExamPreConsultationForm
+      appointmentId={appointmentId}
+      patientRecord={patientSubmitted ? bundle?.patient ?? null : null}
+      canEdit={canEdit && canEditDoctorForm}
+      updaterName={bundle?.doctorUpdaterName}
+      updatedAt={bundle?.doctor?.updated_at}
+      variant={layout === "intake" ? "intake" : "default"}
+      onSaved={() => {
+        void load();
+        onSaved?.();
+      }}
+    />
+  );
+
+  if (layout === "intake") {
+    return (
+      <div className="space-y-3">
+        {patientPanel}
+        {doctorForm}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
       <div className="max-h-[70vh] overflow-y-auto pr-1">
-        <PatientPreConsultationPanel
-          record={patientSubmitted ? bundle?.patient ?? null : null}
-          creatorName={bundle?.patientCreatorName}
-          submittedAt={bundle?.patient?.submitted_at}
-          isDraft={patientDraft && !patientSubmitted}
-        />
+        {patientPanel}
       </div>
-      <DoctorExamPreConsultationForm
-        appointmentId={appointmentId}
-        patientRecord={patientSubmitted ? bundle?.patient ?? null : null}
-        canEdit={canEdit}
-        updaterName={bundle?.doctorUpdaterName}
-        updatedAt={bundle?.doctor?.updated_at}
-        onSaved={() => {
-          void load();
-          onSaved?.();
-        }}
-      />
+      {doctorForm}
     </div>
   );
 }

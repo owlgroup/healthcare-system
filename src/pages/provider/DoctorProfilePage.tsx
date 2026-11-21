@@ -18,6 +18,7 @@ import {
   validateAvatarFile,
   createAvatarSignedUrl,
 } from '@/lib/doctor-avatar-api';
+import { sanitizePinInput } from '@/lib/pin-input';
 
 export default function DoctorProfilePage() {
   const [profile, setProfile] = useState<DoctorProfile | null>(null);
@@ -287,10 +288,9 @@ export default function DoctorProfilePage() {
                     id="new-pin"
                     type="password"
                     inputMode="numeric"
-                    maxLength={6}
                     placeholder="6 chữ số"
                     value={newPin}
-                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
+                    onChange={(e) => setNewPin(sanitizePinInput(e.target.value))}
                     className="h-[38px] bg-card font-mono text-[15px] tracking-[0.3em] placeholder:font-sans placeholder:text-sm placeholder:tracking-normal"
                   />
                 </div>
@@ -300,10 +300,9 @@ export default function DoctorProfilePage() {
                     id="confirm-pin"
                     type="password"
                     inputMode="numeric"
-                    maxLength={6}
                     placeholder="6 chữ số"
                     value={confirmPin}
-                    onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
+                    onChange={(e) => setConfirmPin(sanitizePinInput(e.target.value))}
                     className="h-[38px] bg-card font-mono text-[15px] tracking-[0.3em] placeholder:font-sans placeholder:text-sm placeholder:tracking-normal"
                   />
                 </div>

@@ -37,6 +37,7 @@ vi.mock("@/lib/cccd-ocr", () => ({
   mapBhytParsedToInsuranceUpdates: vi.fn(),
   mapCccdParsedToFormUpdates: vi.fn(),
   checkCccdOcrQuality: vi.fn(),
+  checkCccdBackOcrQuality: vi.fn(),
   checkBhytOcrQuality: vi.fn(),
 }));
 

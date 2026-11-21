@@ -78,7 +78,7 @@ const AdminSidebarContent = ({
           </NavLink>
         ))}
       </nav>
-      <div className="px-3 pt-6 mt-auto border-t">
+      <div className="px-3 py-4 mt-auto border-t">
         <button
           type="button"
           disabled={isLoggingOut}

@@ -6,6 +6,7 @@ import {
   isOcrTargetFieldEmpty,
   mergeOcrFillEmpty,
   checkCccdOcrQuality,
+  checkCccdBackOcrQuality,
   checkBhytOcrQuality,
   normalizeOcrGender,
 } from "@/lib/cccd-ocr";
@@ -243,6 +244,31 @@ describe("checkCccdOcrQuality", () => {
     });
     expect(result.confidence).toBe(85);
     expect(result.isLowQuality).toBe(false);
+  });
+});
+
+describe("checkCccdBackOcrQuality", () => {
+  it("should return good quality when back-side fields are read without name/dob/address", () => {
+    const result = checkCccdBackOcrQuality({
+      parsed: {
+        id: "079189012345",
+        name: "",
+        dob: "",
+        address: "",
+        issued: "14/03/2024",
+        extra: "CỤC TRƯỞNG CỤC CẢNH SÁT ĐĂNG KÝ, QUẢN LÝ CƯ TRÚ VÀ DỮ LIỆU QUỐC GIA VỀ DÂN CƯ",
+      },
+    });
+    expect(result.isLowQuality).toBe(false);
+    expect(result.filledFieldCount).toBe(3);
+    expect(result.totalExpectedFields).toBe(3);
+    expect(result.confidence).toBe(100);
+  });
+
+  it("should return low quality when back-side fields are missing", () => {
+    const result = checkCccdBackOcrQuality({ parsed: { id: "079189012345" } });
+    expect(result.isLowQuality).toBe(true);
+    expect(result.message).toContain("không đủ rõ");
   });
 });
 

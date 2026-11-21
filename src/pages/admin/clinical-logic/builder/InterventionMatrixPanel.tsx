@@ -1,19 +1,6 @@
 import { GitBranch, Plus, Trash2 } from "lucide-react";
 import type { InterventionRule } from "@/types/questionnaire";
 
-const PATH_STYLES: Record<string, { box: string; label: string }> = {
-  critical: { box: "bg-red-50 border-red-100", label: "Mức nghiêm trọng" },
-  moderate: { box: "bg-sky-50 border-sky-100", label: "Mức trung bình" },
-  default:  { box: "bg-muted/40 border-border/60", label: "Quy tắc" },
-};
-
-function pathStyle(label: string) {
-  const key = label.toLowerCase();
-  if (key.includes("critical") || key.includes("nghiêm")) return PATH_STYLES.critical;
-  if (key.includes("moderate") || key.includes("trung")) return PATH_STYLES.moderate;
-  return PATH_STYLES.default;
-}
-
 type Props = {
   rules: InterventionRule[];
   onChange: (rules: InterventionRule[]) => void;
@@ -22,7 +9,7 @@ type Props = {
 
 export default function InterventionMatrixPanel({ rules, onChange, disabled }: Props) {
   function addRule() {
-    onChange([...rules, { condition: "", label: "trung bình", action: "" }]);
+    onChange([...rules, { condition: "", label: "", action: "" }]);
   }
 
   function updateRule(i: number, fields: Partial<InterventionRule>) {
@@ -34,69 +21,69 @@ export default function InterventionMatrixPanel({ rules, onChange, disabled }: P
   }
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-pink-100">
-            <GitBranch className="h-4 w-4 text-pink-600" strokeWidth={2} />
-          </div>
-          <p className="text-sm font-bold text-foreground">Ma trận can thiệp</p>
+    <div className="flex flex-col gap-3 rounded-xl border border-[#E8E5E2] bg-white p-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5">
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-[#FCEBEF] text-[#C41740]">
+            <GitBranch className="h-4 w-4" strokeWidth={2} />
+          </span>
+          <p className="text-sm font-bold text-[#1A1614]">Ma trận can thiệp</p>
         </div>
         <button
           type="button"
           disabled={disabled}
           onClick={addRule}
-          className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-40"
+          aria-label="Thêm quy tắc can thiệp"
+          className="grid h-7 w-7 cursor-pointer place-items-center rounded-full bg-[#C41740] text-white transition-colors duration-200 hover:bg-[#A8123A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Plus className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="space-y-3">
+      <div className="flex flex-col gap-2">
         {rules.length === 0 && (
-          <p className="text-xs text-muted-foreground">Chưa có quy tắc can thiệp.</p>
+          <p className="text-xs text-[#7A726D]">Chưa có quy tắc can thiệp.</p>
         )}
-        {rules.map((rule, i) => {
-          const style = pathStyle(rule.label);
-          return (
-            <div key={i} className={`rounded-xl border p-4 space-y-2 ${style.box}`}>
-              <div className="flex items-center justify-between gap-2">
-                <input
-                  value={rule.label}
-                  disabled={disabled}
-                  onChange={(e) => updateRule(i, { label: e.target.value })}
-                  placeholder="nghiêm trọng / trung bình"
-                  className="bg-transparent text-[10px] font-bold uppercase tracking-wider text-muted-foreground focus:outline-none disabled:opacity-60 w-32"
-                />
-                <button
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => removeRule(i)}
-                  className="p-1 text-muted-foreground hover:text-destructive disabled:opacity-40"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
+        {rules.map((rule, i) => (
+          <div key={i} className="flex flex-col gap-1.5 rounded-[10px] border border-[#E8E5E2] bg-[#FAF9F8] p-2.5">
+            <div className="flex items-center gap-1.5">
+              <span className="shrink-0 text-[12px] font-semibold text-[#4A4440]">Điểm ≥</span>
               <input
                 value={rule.condition}
                 disabled={disabled}
+                aria-label={`Điều kiện quy tắc ${i + 1}`}
                 onChange={(e) => updateRule(i, { condition: e.target.value })}
-                placeholder="VD: score >= 10"
-                className="w-full bg-transparent text-xs font-mono text-foreground focus:outline-none disabled:opacity-60"
+                placeholder="10"
+                className="h-8 min-w-0 flex-1 rounded-lg border border-[#E1DDDA] bg-white px-2 font-mono text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:opacity-60"
               />
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground text-sm">→</span>
-                <input
-                  value={rule.action}
-                  disabled={disabled}
-                  onChange={(e) => updateRule(i, { action: e.target.value })}
-                  placeholder="VD: Chuyển chuyên khoa tâm thần"
-                  className="flex-1 rounded-full border border-border/60 bg-white px-3 py-1.5 text-xs font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-                />
-              </div>
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => removeRule(i)}
+                aria-label="Xóa quy tắc can thiệp"
+                className="grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-md text-[#7A726D] hover:bg-[#FCEBEF] hover:text-[#C41740] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:opacity-40"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
             </div>
-          );
-        })}
+            <input
+              value={rule.action}
+              disabled={disabled}
+              aria-label={`Hành động quy tắc ${i + 1}`}
+              onChange={(e) => updateRule(i, { action: e.target.value })}
+              placeholder="Chuyển bác sĩ đó"
+              className="h-8 rounded-lg border border-[#E1DDDA] bg-white px-2.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:opacity-60"
+            />
+            <input
+              value={rule.label}
+              disabled={disabled}
+              aria-label={`Nhãn quy tắc ${i + 1}`}
+              onChange={(e) => updateRule(i, { label: e.target.value })}
+              placeholder="Nhãn mức (tuỳ chọn)"
+              className="h-7 rounded-lg border border-transparent bg-transparent px-2 text-[11px] text-[#7A726D] focus-visible:border-[#E1DDDA] focus-visible:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] disabled:opacity-60"
+            />
+          </div>
+        ))}
       </div>
     </div>
   );

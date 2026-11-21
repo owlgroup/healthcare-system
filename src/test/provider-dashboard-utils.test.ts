@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AdminAppointment } from "@/types/admin-appointment";
-import type { ClinicalTask } from "@/lib/ai-assistant-api";
 import {
   ageFromDob,
-  deriveClinicalTaskItems,
   deriveUpcomingSchedule,
   deriveMonitoringStats,
   deriveRecentPatients,
@@ -142,56 +140,5 @@ describe("provider-dashboard-utils", () => {
     );
     expect(monitoring.total).toBe(2);
     expect(monitoring.newThisWeek).toBe(1);
-  });
-
-  it("derives open clinical tasks with progress", () => {
-    const tasks: ClinicalTask[] = [
-      {
-        id: "t1",
-        appointment_id: null,
-        patient_id: null,
-        assigned_role: "doctor",
-        title: "Review labs",
-        description: null,
-        status: "PENDING",
-        due_date: "2026-07-26T00:00:00Z",
-        override_reason: null,
-        created_by: "sys",
-        created_at: "2026-07-25T00:00:00Z",
-        updated_at: "2026-07-25T00:00:00Z",
-      },
-      {
-        id: "t2",
-        appointment_id: null,
-        patient_id: null,
-        assigned_role: "doctor",
-        title: "Sign note",
-        description: null,
-        status: "IN_PROGRESS",
-        due_date: "2026-07-25T00:00:00Z",
-        override_reason: null,
-        created_by: "sys",
-        created_at: "2026-07-25T00:00:00Z",
-        updated_at: "2026-07-25T00:00:00Z",
-      },
-      {
-        id: "t3",
-        appointment_id: null,
-        patient_id: null,
-        assigned_role: "doctor",
-        title: "Done task",
-        description: null,
-        status: "COMPLETED",
-        due_date: "2026-07-24T00:00:00Z",
-        override_reason: null,
-        created_by: "sys",
-        created_at: "2026-07-24T00:00:00Z",
-        updated_at: "2026-07-24T00:00:00Z",
-      },
-    ];
-    const items = deriveClinicalTaskItems(tasks, 4, new Date("2026-07-25T12:00:00"));
-    expect(items).toHaveLength(2);
-    expect(items[0].done).toBe(50);
-    expect(items[1].done).toBe(0);
   });
 });

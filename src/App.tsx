@@ -67,7 +67,6 @@ import ClinicalTasksContent from "./components/provider/ClinicalTasksContent.tsx
 import AdminAiAccuracyPage from "./pages/admin/AdminAiAccuracyPage.tsx";
 import DeltaLogPage from "./pages/admin/DeltaLogPage.tsx";
 import CustomerPortal from "./pages/customer/CustomerPortal.tsx";
-import CustomerOverviewPage from "./pages/customer/CustomerOverviewPage.tsx";
 import CustomerPermissionGuard from "./pages/customer/CustomerPermissionGuard.tsx";
 import { PermissionsProvider } from "./hooks/use-permissions.tsx";
 
@@ -286,7 +285,7 @@ const App = () => (
             >
               <Route index element={<Navigate to="overview" replace />} />
               <Route element={<CustomerPermissionGuard />}>
-                <Route path="overview" element={<CustomerOverviewPage />} />
+                <Route path="overview" element={<ProviderDashboard portal="customer" />} />
                 <Route
                   path="patient-records"
                   element={<PatientRecordsManagement portal="admin" />}
@@ -294,6 +293,13 @@ const App = () => (
                 <Route path="patients" element={<ProviderPatientsPage />} />
                 <Route path="appointments" element={<AdminAppointmentsContent />} />
                 <Route path="master-data" element={<MasterDataContent />} />
+                <Route path="question-library" element={<QuestionLibraryPage />} />
+                <Route path="question-library/new" element={<QuestionnaireBuilderPage />} />
+                <Route path="question-library/:id" element={<QuestionnaireBuilderPage />} />
+                <Route path="users" element={<AdminUsersContent />} />
+                <Route path="permissions" element={<AdminPermissionsContent />} />
+                <Route path="roles" element={<AdminRolesContent />} />
+                <Route path="delta-log" element={<DeltaLogPage />} />
               </Route>
             </Route>
             <Route path="/about" element={<About />} />

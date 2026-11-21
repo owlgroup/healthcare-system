@@ -207,11 +207,12 @@ async function mapExamRowsWithIcds(
 export async function listLockedExaminationsForPatient(ids: {
   patientUserId?: string | null;
   profileId?: string | null;
-}): Promise<MedicalExamination[]> {
+}, options?: { statuses?: Array<'DRAFT' | 'LOCKED'> }): Promise<MedicalExamination[]> {
   const userId = ids.patientUserId && UUID_RE.test(ids.patientUserId) ? ids.patientUserId : null;
   const profileId = ids.profileId && UUID_RE.test(ids.profileId) ? ids.profileId : null;
   if (!userId && !profileId) return [];
 
+  const statuses = options?.statuses ?? ['LOCKED'];
   const byId = new Map<string, MedicalExamination>();
 
   if (userId) {
@@ -219,7 +220,7 @@ export async function listLockedExaminationsForPatient(ids: {
       .from('medical_examinations')
       .select('*, soap_icd_codes(*)')
       .eq('patient_id', userId)
-      .eq('status', 'LOCKED');
+      .in('status', statuses);
     if (error) throw new Error(mapEmrError(error.message));
     for (const exam of await mapExamRowsWithIcds((data ?? []) as Record<string, unknown>[])) {
       byId.set(exam.id, exam);
@@ -238,7 +239,7 @@ export async function listLockedExaminationsForPatient(ids: {
         .from('medical_examinations')
         .select('*, soap_icd_codes(*)')
         .in('appointment_id', appointmentIds)
-        .eq('status', 'LOCKED');
+        .in('status', statuses);
       if (error) throw new Error(mapEmrError(error.message));
       for (const exam of await mapExamRowsWithIcds((data ?? []) as Record<string, unknown>[])) {
         byId.set(exam.id, exam);

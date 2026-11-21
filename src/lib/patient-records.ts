@@ -42,14 +42,12 @@ export type PatientRecordStatusFilter =
   | "all"
   | "active"
   | "unverified"
-  | "draft"
   | "inactive"
   | "rejected";
 
 const STATUS_FILTER_TO_DB: Record<Exclude<PatientRecordStatusFilter, "all">, string> = {
   active: "ACTIVE",
   unverified: "UNVERIFIED",
-  draft: "DRAFT",
   inactive: "INACTIVE",
   rejected: "REJECTED",
 };
@@ -71,6 +69,10 @@ export function mapPatientRecordReviewError(message: string): string {
     return "Không tìm thấy hồ sơ.";
   }
   return message;
+}
+
+export function canReviewPatientProfile(role: string | null | undefined): boolean {
+  return role === "admin" || role === "doctor";
 }
 
 export async function reviewPatientProfile(

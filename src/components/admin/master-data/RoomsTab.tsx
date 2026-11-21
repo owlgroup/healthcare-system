@@ -6,7 +6,7 @@ import type { Room, Facility } from '@/types/master-data';
 import { useRegisterAddAction } from './MasterDataActionsContext';
 import {
   EntityTable, ActiveBadge, RowActions, useToggleActive, ActiveStatusField, DeleteConfirmDialog,
-  Field, FormActions, inputCls, useEntityDialog, useEntityTableData, cellPrimaryCls, cellMutedCls, cellCls,
+  Field, FormActions, inputCls, catalogDialogCls, catalogOverlayCls, useEntityDialog, useEntityTableData, cellPrimaryCls, cellMutedCls, cellCls,
 } from './shared';
 
 export default function RoomsTab() {
@@ -136,7 +136,7 @@ function RoomDialog({ open, initial, facilities, onClose, onSaved }: {
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className={catalogDialogCls} overlayClassName={catalogOverlayCls}>
         <DialogHeader><DialogTitle>{form.id ? 'Sửa phòng khám' : 'Thêm phòng khám'}</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <Field label="Cơ sở *">

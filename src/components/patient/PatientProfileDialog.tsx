@@ -28,6 +28,7 @@ import {
 import { validateCccdRequired } from "@/lib/cccd-required";
 import { encryptRow, sanitizeSensitiveInput } from "@/lib/crypto";
 import { supabase } from "@/lib/supabase";
+import { formatPatientProfileStatus } from "@/config/ui-labels";
 import { type PatientPortalDetail } from "@/types/patient-portal";
 import {
   Sheet,
@@ -151,64 +152,6 @@ function formatDob(iso: string | null | undefined): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString("vi-VN");
-}
-
-function readOnboardingDraft(): Partial<PatientPortalDetail> | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem("qcare_onboarding_draft");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as {
-      personal?: {
-        legalFirstName?: string;
-        legalLastName?: string;
-        dateOfBirth?: string;
-        phoneNumber?: string;
-        email?: string;
-        pronouns?: string;
-      };
-      identity?: {
-        idNumber?: string;
-        expirationDate?: string;
-        residentialAddress?: string;
-        issuedDate?: string;
-        issuer?: string;
-      };
-      insurance?: {
-        provider?: string;
-        memberId?: string;
-        groupNumber?: string;
-      };
-    };
-    const p = parsed.personal;
-    const i = parsed.identity;
-    const ins = parsed.insurance;
-    const first = p?.legalFirstName ?? "";
-    const last = p?.legalLastName ?? "";
-    return {
-      id: "",
-      user_id: "",
-      legal_first_name: first || null,
-      legal_last_name: last || null,
-      full_name: [first, last].filter(Boolean).join(" ") || "Bệnh nhân",
-      date_of_birth: p?.dateOfBirth ?? null,
-      preferred_pronouns: p?.pronouns ?? null,
-      email_address: p?.email ?? null,
-      phone_number: p?.phoneNumber ?? null,
-      id_number: i?.idNumber ?? null,
-      residential_address: i?.residentialAddress ?? null,
-      id_expiration_date: i?.expirationDate ?? null,
-      id_issued_date: i?.issuedDate ?? null,
-      id_issuer: i?.issuer ?? null,
-      insurance_provider: ins?.provider ?? null,
-      member_id: ins?.memberId ?? null,
-      group_number: ins?.groupNumber ?? null,
-      submitted_at: null,
-      consent_accepted: false,
-    };
-  } catch {
-    return null;
-  }
 }
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -492,16 +435,8 @@ const PatientProfileDialog = ({ open, onOpenChange }: PatientProfileDialogProps)
   const isLoading = profileLoading && data === undefined;
   const isError = profileError;
 
-  const draftFallback = useMemo(() => readOnboardingDraft(), [open]);
-
   const profile: PatientPortalDetail | null = useMemo(() => {
     if (data) return data;
-    if (draftFallback) {
-      return {
-        ...draftFallback,
-        email_address: draftFallback.email_address || sessionEmail,
-      } as PatientPortalDetail;
-    }
     if (sessionEmail) {
       return {
         id: "",
@@ -523,11 +458,11 @@ const PatientProfileDialog = ({ open, onOpenChange }: PatientProfileDialogProps)
         group_number: null,
         submitted_at: null,
         consent_accepted: false,
-        status: "DRAFT",
+        status: "UNVERIFIED",
       };
     }
     return null;
-  }, [data, draftFallback, sessionEmail, userId]);
+  }, [data, sessionEmail, userId]);
 
   const displayId =
     profile?.id_number?.trim() ||
@@ -864,12 +799,6 @@ const PatientProfileDialog = ({ open, onOpenChange }: PatientProfileDialogProps)
               </div>
             </div>
 
-            {!data && draftFallback ? (
-              <p className="rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
-                Đang hiển thị bản nháp onboarding (chưa lưu lên hệ thống).
-              </p>
-            ) : null}
-
             {/* Thông tin cá nhân */}
             <section>
               <h3 className="mb-2 text-sm font-semibold text-foreground">Thông tin cá nhân</h3>
@@ -917,7 +846,10 @@ const PatientProfileDialog = ({ open, onOpenChange }: PatientProfileDialogProps)
                   <Field label="Email" value={profile.email_address ?? ""} />
                   <Field label="Số điện thoại" value={profile.phone_number ?? ""} />
                   <Field label="Đại từ" value={profile.preferred_pronouns ?? ""} />
-                  <Field label="Trạng thái hồ sơ" value={profile.submitted_at ? "Đã nộp" : "Bản nháp"} />
+                  <Field
+                    label="Trạng thái hồ sơ"
+                    value={data ? formatPatientProfileStatus(data.status) : "Chưa đăng ký"}
+                  />
                 </div>
               )}
             </section>

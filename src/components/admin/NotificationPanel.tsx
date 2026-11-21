@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bell, CalendarPlus, CheckCheck, Trash2 } from "lucide-react";
+import { Bell, CalendarClock, CalendarPlus, CheckCheck, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type { AppointmentNotification } from "@/hooks/useAdminNotifications";
 import { UI_WALK_IN } from "@/config/ui-labels";
@@ -11,14 +11,18 @@ type Props = {
   onMarkAsRead: (id: string) => void;
   onClearAll: () => void;
   appointmentsPath?: string;
+  /** Path pattern for examination detail, e.g. "/provider-portal/examination/:id" */
+  examinationPath?: string;
 };
+
+function formatSlot(date: string, time: string): string {
+  const [y, m, d] = date.split("-");
+  return `${time.slice(0, 5)} · ${d}/${m}/${y}`;
+}
 
 function formatTime(n: AppointmentNotification): string {
   if (n.walkIn) return UI_WALK_IN;
-  if (n.slotDate && n.startTime) {
-    const [y, m, d] = n.slotDate.split("-");
-    return `${n.startTime.slice(0, 5)} · ${d}/${m}/${y}`;
-  }
+  if (n.slotDate && n.startTime) return formatSlot(n.slotDate, n.startTime);
   return new Date(n.createdAt).toLocaleString("vi-VN", {
     hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit",
   });
@@ -39,6 +43,7 @@ export default function NotificationPanel({
   onMarkAsRead,
   onClearAll,
   appointmentsPath = "/admin/appointments",
+  examinationPath,
 }: Props) {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -62,7 +67,11 @@ export default function NotificationPanel({
   const handleClickNotification = (n: AppointmentNotification) => {
     onMarkAsRead(n.id);
     setOpen(false);
-    navigate(appointmentsPath);
+    if (examinationPath && n.appointmentId) {
+      navigate(examinationPath.replace(":id", n.appointmentId));
+    } else {
+      navigate(appointmentsPath);
+    }
   };
 
   return (
@@ -127,7 +136,9 @@ export default function NotificationPanel({
                 <p className="text-sm">Chưa có thông báo mới</p>
               </div>
             ) : (
-              notifications.map((n) => (
+              notifications.map((n) => {
+                const isRescheduled = n.kind === "RESCHEDULED";
+                return (
                 <button
                   key={n.id}
                   type="button"
@@ -136,16 +147,31 @@ export default function NotificationPanel({
                     !n.read ? "bg-primary/5" : ""
                   }`}
                 >
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <CalendarPlus className="h-4 w-4" />
+                  <span
+                    className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                      isRescheduled ? "bg-amber-100 text-amber-700" : "bg-primary/10 text-primary"
+                    }`}
+                  >
+                    {isRescheduled ? <CalendarClock className="h-4 w-4" /> : <CalendarPlus className="h-4 w-4" />}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">
                       {n.patientName}
                     </p>
+                    {isRescheduled && (
+                      <p className="text-xs font-semibold text-amber-700">Bệnh nhân đổi lịch hẹn</p>
+                    )}
+                    {isRescheduled && n.previousSlotDate && n.previousStartTime && (
+                      <p className="text-xs text-muted-foreground line-through truncate">
+                        {formatSlot(n.previousSlotDate, n.previousStartTime)}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground truncate">
-                      {n.specialtyName} · {formatTime(n)}
+                      {n.specialtyName} · {isRescheduled ? "→ " : ""}{formatTime(n)}
                     </p>
+                    {isRescheduled && n.reason && (
+                      <p className="text-xs text-foreground/80 mt-0.5 line-clamp-2">Lý do: {n.reason}</p>
+                    )}
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {timeAgo(n.createdAt)}
                     </p>
@@ -154,7 +180,8 @@ export default function NotificationPanel({
                     <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
                   )}
                 </button>
-              ))
+                );
+              })
             )}
           </div>
 

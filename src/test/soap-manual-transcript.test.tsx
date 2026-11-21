@@ -240,7 +240,7 @@ describe("SoapNoteEditor manual transcript form", () => {
 
     render(<SoapNoteEditor appointmentId="appt-1" />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Tạo lại SOAP bằng AI LLM/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Tạo SOAP$/ }));
     fireEvent.click(screen.getByRole("button", { name: /Xác nhận ghi đè/i }));
 
     expect(generateSoap).toHaveBeenCalledWith(lines);

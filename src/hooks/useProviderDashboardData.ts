@@ -1,12 +1,10 @@
 import { useMemo } from "react";
 import { addDays, format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
-import { fetchClinicalTasks } from "@/lib/ai-assistant-api";
 import { fetchDoctorAppointments } from "@/lib/doctor-appointment-api";
 import { getMyDoctorProfile } from "@/lib/doctor-profile-api";
 import { fetchRecentPatientRecords, searchPatientRecords } from "@/lib/patient-records";
 import {
-  deriveClinicalTaskItems,
   deriveTodaySchedule,
   deriveTodayStats,
   deriveUpcomingSchedule,
@@ -14,7 +12,6 @@ import {
   formatDoctorDisplayName,
   getWeekRange,
   mapPatientRecordToDashboard,
-  type DashboardClinicalTaskItem,
   type DashboardMonitoringStats,
   type DashboardRecentPatient,
   type DashboardScheduleItem,
@@ -23,16 +20,16 @@ import {
 } from "@/lib/provider-dashboard-utils";
 import { supabase } from "@/lib/supabase";
 import type { AdminAppointment } from "@/types/admin-appointment";
-import type { ClinicalTask } from "@/lib/ai-assistant-api";
+
+export type DashboardPortal = "doctor" | "customer";
 
 export type ProviderDashboardData = {
-  doctorName: string;
+  viewerName: string;
   todayStats: DashboardTodayStats;
   monitoringStats: DashboardMonitoringStats;
   todaySchedule: DashboardScheduleItem[];
   upcomingSchedule: DashboardScheduleItem[];
   weeklyChart: DashboardWeekChartPoint[];
-  clinicalTasks: DashboardClinicalTaskItem[];
 };
 
 const UPCOMING_WINDOW_DAYS = 60;
@@ -113,43 +110,59 @@ export function useProviderDashboardRecentPatients() {
   });
 }
 
-async function loadProviderDashboard(anchor: Date): Promise<ProviderDashboardData> {
+async function loadViewerName(portal: DashboardPortal): Promise<string> {
+  if (portal === "doctor") {
+    const profile = await getMyDoctorProfile();
+    return formatDoctorDisplayName(profile?.full_name);
+  }
+  const { data: auth } = await supabase.auth.getUser();
+  const { data } = await supabase
+    .from("user_profiles")
+    .select("full_name, email")
+    .eq("user_id", auth.user?.id ?? "")
+    .maybeSingle();
+  return data?.full_name?.trim() || data?.email || "bạn";
+}
+
+async function loadProviderDashboard(
+  anchor: Date,
+  portal: DashboardPortal,
+): Promise<ProviderDashboardData> {
   const { today, dateFrom, dateTo } = getWeekRange(anchor);
 
   const upcomingFrom = format(addDays(anchor, 1), "yyyy-MM-dd");
   const upcomingTo = format(addDays(anchor, UPCOMING_WINDOW_DAYS), "yyyy-MM-dd");
 
-  const [profileResult, todayApptsResult, weekApptsResult, tasksResult, upcomingApptsResult] =
+  const [nameResult, todayApptsResult, weekApptsResult, upcomingApptsResult] =
     await Promise.allSettled([
-      getMyDoctorProfile(),
+      loadViewerName(portal),
       fetchDoctorAppointments({ date: today }),
       fetchDoctorAppointments({ dateFrom, dateTo }),
-      fetchClinicalTasks("doctor"),
       fetchDoctorAppointments({ dateFrom: upcomingFrom, dateTo: upcomingTo }),
     ]);
 
-  const profile = settled(profileResult, null);
   const todayAppts = settled(todayApptsResult, [] as AdminAppointment[]);
   const weekAppts = settled(weekApptsResult, [] as AdminAppointment[]);
-  const tasks = settled(tasksResult, [] as ClinicalTask[]);
   const upcomingAppts = settled(upcomingApptsResult, [] as AdminAppointment[]);
 
   return {
-    doctorName: formatDoctorDisplayName(profile?.full_name),
+    viewerName: settled(nameResult, portal === "doctor" ? "Bác sĩ" : "bạn"),
     todayStats: deriveTodayStats(todayAppts),
     monitoringStats: EMPTY_MONITORING,
     todaySchedule: deriveTodaySchedule(todayAppts),
     upcomingSchedule: deriveUpcomingSchedule(upcomingAppts, today, 3),
     weeklyChart: deriveWeeklyChart(weekAppts, anchor),
-    clinicalTasks: deriveClinicalTaskItems(tasks, 4, anchor),
   };
 }
 
-export function useProviderDashboardData(anchor: Date = new Date()) {
+export function useProviderDashboardData(
+  anchor: Date = new Date(),
+  portal: DashboardPortal = "doctor",
+) {
   const { dateFrom, dateTo, today } = useMemo(() => getWeekRange(anchor), [anchor]);
 
   return useQuery({
-    queryKey: ["provider-dashboard", today, dateFrom, dateTo],
-    queryFn: () => loadProviderDashboard(anchor),
+    queryKey: ["provider-dashboard", portal, today, dateFrom, dateTo],
+    queryFn: () => loadProviderDashboard(anchor, portal),
   });
 }

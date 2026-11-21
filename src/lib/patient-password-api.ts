@@ -1,7 +1,8 @@
+import { getEnv } from "@/lib/env";
 import { fetchWithAuthRetry, forceAuthLogout, getAccessTokenOrRefresh } from "@/lib/auth-refresh";
 
 function functionsBaseUrl(): string {
-  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  const url = getEnv("VITE_SUPABASE_URL") as string | undefined;
   if (!url) throw new Error("VITE_SUPABASE_URL is not configured");
   return `${url.replace(/\/$/, "")}/functions/v1`;
 }

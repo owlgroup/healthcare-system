@@ -18,6 +18,7 @@ import {
   updateAdminUser,
 } from "@/lib/admin-api";
 import { fetchSpecialties } from "@/lib/appointment-api";
+import { decryptRows, encrypt } from "@/lib/crypto";
 import type { Specialty } from "@/types/appointment";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
@@ -29,30 +30,36 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-
 const statusLabel: Record<AdminUserStatus, string> = {
   active: "Hoạt động",
-  inactive: "Ngưng",
+  inactive: "Vô hiệu",
   locked: "Khóa",
 };
 
 const statusStyle: Record<AdminUserStatus, string> = {
-  active: "bg-success/10 text-success",
-  inactive: "bg-muted text-muted-foreground",
-  locked: "bg-destructive/10 text-destructive",
+  active: "bg-[#E9F7EE] text-[#157F3D]",
+  inactive: "bg-[#F0EEEC] text-[#7A726D]",
+  locked: "bg-[#FFF4DD] text-[#A65F00]",
 };
 
-/** Màu badge vai trò / avatar theo portal của vai trò (vai trò tùy chỉnh dùng màu tím). */
+/** Màu badge vai trò / avatar theo portal (vai trò tùy chỉnh dùng tím design). */
 const roleTone = (user: AdminUserRow) => {
   const portal = user.roles?.portal_role ?? user.role;
-  if (portal === "admin") return "bg-primary/10 text-primary";
-  if (portal === "doctor") return "bg-blue-50 text-blue-700";
-  if (portal === "patient") return "bg-green-50 text-green-700";
-  return "bg-violet-50 text-violet-700";
+  if (portal === "admin") return "bg-[#FCEBEF] text-[#C41740]";
+  if (portal === "doctor") return "bg-[#EAF0FF] text-[#1D4FD8]";
+  if (portal === "patient") return "bg-[#E9F7EE] text-[#157F3D]";
+  return "bg-[#F1ECFD] text-[#6D3FC9]";
 };
+
+const chipClass = (active: boolean) =>
+  `h-[30px] cursor-pointer whitespace-nowrap rounded-full border px-3 text-[12.5px] transition-colors duration-200 motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] ${
+    active
+      ? "border-[#F3C9D3] bg-[#FCEBEF] font-semibold text-[#C41740]"
+      : "border-[#E1DDDA] bg-white font-medium text-[#4A4440] hover:bg-[#FAF9F8]"
+  }`;
+
+const fieldClass =
+  "h-[38px] w-full rounded-lg border border-[#E1DDDA] bg-[#FAF9F8] px-3 text-sm text-[#1A1614] outline-none transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-[#C41740]";
 
 const initials = (name: string | null, email: string) => {
   const words = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -117,7 +124,7 @@ const AdminUsersContent = () => {
         listFacilities(),
         fetchSpecialties(),
       ]);
-      setUsers(usersRes.users);
+      setUsers(await decryptRows(usersRes.users, "user_profiles"));
       setTotal(usersRes.total);
       setRoles(rolesRes.roles);
       setFacilities(facRes.facilities);
@@ -166,11 +173,12 @@ const AdminUsersContent = () => {
 
     setSaving(true);
     try {
+      const phone = await encrypt(form.phone.trim());
       if (editing) {
         const res = await updateAdminUser({
           userId: editing.user_id,
           fullName: form.fullName,
-          phone: form.phone,
+          phone,
           roleId: form.roleId,
           facilityId: form.facilityId || null,
           specialty: isDoctor ? form.specialty : null,
@@ -181,7 +189,7 @@ const AdminUsersContent = () => {
         const res = await createAdminUser({
           fullName: form.fullName,
           email: form.email,
-          phone: form.phone,
+          phone,
           roleId: form.roleId,
           facilityId: form.facilityId || null,
           specialty: isDoctor ? form.specialty : null,
@@ -233,35 +241,37 @@ const AdminUsersContent = () => {
   const roleChips = [{ id: "all", name: "Tất cả" }, ...roles.map((r) => ({ id: r.id, name: r.name }))];
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
-        <div className="space-y-1">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider">
-            <span className="text-muted-foreground">Tổ chức</span>
-            <span className="text-muted-foreground">›</span>
-            <span className="text-primary">Người dùng</span>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Quản lý người dùng</h1>
-          <p className="text-sm text-muted-foreground">Tài khoản truy cập hệ thống theo vai trò và cơ sở.</p>
+    <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-3.5 text-[#1A1614]">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <nav aria-label="Breadcrumb" className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9A928D]">
+            Tổ chức › <span className="text-[#C41740]">Người dùng</span>
+          </nav>
+          <h1 className="text-2xl font-bold tracking-tight text-[#1A1614]">Quản lý người dùng</h1>
+          <p className="text-pretty text-[#7A726D]">Tài khoản truy cập hệ thống theo vai trò và cơ sở.</p>
         </div>
-        <Button onClick={openCreate} className="gap-2 shrink-0">
+        <Button
+          onClick={openCreate}
+          className="h-9 shrink-0 cursor-pointer gap-1.5 rounded-lg bg-[#C41740] px-3.5 font-semibold text-white hover:bg-[#A8123A] focus-visible:ring-[#C41740]"
+        >
           <UserPlus className="h-4 w-4" />
           Thêm người dùng
         </Button>
       </div>
 
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <div className="flex flex-col gap-3 p-4 border-b">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
+      <div className="overflow-hidden rounded-xl border border-[#E8E5E2] bg-white">
+        <div className="flex flex-wrap items-center gap-3 border-b border-[#EFECEA] px-4 py-3">
+          <label className="flex h-9 min-w-0 w-full items-center gap-2 rounded-lg border border-[#E1DDDA] bg-[#FAF9F8] px-3 text-[#7A726D] focus-within:ring-2 focus-within:ring-[#C41740]">
+            <Search className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <input
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Tìm theo tên, email, SĐT..."
-              className="pl-10 bg-muted/40"
+              placeholder="Tìm theo tên, email, SĐT…"
+              aria-label="Tìm theo tên, email, SĐT"
+              className="min-w-0 flex-1 border-0 bg-transparent text-sm text-[#1A1614] outline-none placeholder:text-[#9A928D]"
             />
-          </div>
-          <div className="flex flex-wrap gap-2">
+          </label>
+          <div className="flex max-w-full flex-wrap gap-1.5" role="group" aria-label="Lọc theo vai trò">
             {roleChips.map((chip) => {
               const active = roleFilter === chip.id;
               return (
@@ -270,11 +280,7 @@ const AdminUsersContent = () => {
                   type="button"
                   onClick={() => setRoleFilter(chip.id)}
                   aria-pressed={active}
-                  className={`h-8 px-3 rounded-full border text-sm transition-colors duration-200 cursor-pointer ${
-                    active
-                      ? "border-primary/30 bg-primary/10 text-primary font-semibold"
-                      : "border-border bg-card text-foreground hover:bg-muted/50"
-                  }`}
+                  className={chipClass(active)}
                 >
                   {chip.name}
                 </button>
@@ -284,42 +290,42 @@ const AdminUsersContent = () => {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
-            <Loader2 className="h-5 w-5 animate-spin" />
+          <div className="flex items-center justify-center gap-2 py-16 text-[#7A726D]">
+            <Loader2 className="h-5 w-5 animate-spin motion-reduce:animate-none" />
             Đang tải...
           </div>
         ) : visibleUsers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-            <Users className="h-10 w-10 mb-2 opacity-40" />
+          <div className="flex flex-col items-center justify-center py-10 text-[#7A726D]">
+            <Users className="mb-2 h-10 w-10 opacity-40" aria-hidden="true" />
             <p>{users.length === 0 ? "Chưa có người dùng" : "Không tìm thấy người dùng."}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[820px]">
               <thead>
-                <tr className="border-b bg-muted/30">
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Người dùng</th>
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Vai trò</th>
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Cơ sở</th>
-                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Trạng thái</th>
-                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Thao tác</th>
+                <tr className="border-b border-[#EFECEA] bg-[#FAF9F8]">
+                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-[#7A726D]">Người dùng</th>
+                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-[#7A726D]">Vai trò</th>
+                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-[#7A726D]">Cơ sở</th>
+                  <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-[#7A726D]">Trạng thái</th>
+                  <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wider text-[#7A726D]">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {visibleUsers.map((user) => {
                   const tone = roleTone(user);
                   return (
-                    <tr key={user.user_id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                    <tr key={user.user_id} className="border-b border-[#F0EDEB] transition-colors duration-200 last:border-0 hover:bg-[#FCFBFA] motion-reduce:transition-none">
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className={`h-9 w-9 shrink-0 rounded-full grid place-items-center text-xs font-bold ${tone}`}>
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <span className={`grid h-[34px] w-[34px] shrink-0 place-items-center rounded-full text-xs font-bold ${tone}`}>
                             {initials(user.full_name, user.email)}
                           </span>
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-foreground truncate">{user.full_name ?? "—"}</p>
-                            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                            <p className="truncate text-sm font-semibold text-[#1A1614]">{user.full_name ?? "—"}</p>
+                            <p className="truncate text-xs text-[#7A726D]">{user.email}</p>
                             {user.specialty && (
-                              <p className="text-xs text-primary">Chuyên khoa: {user.specialty}</p>
+                              <p className="text-[11.5px] text-[#C41740]">Chuyên khoa: {user.specialty}</p>
                             )}
                           </div>
                         </div>
@@ -329,26 +335,26 @@ const AdminUsersContent = () => {
                           {user.roles?.name ?? user.role}
                         </span>
                       </td>
-                      <td className={`px-4 py-3 text-sm ${user.facilities?.name ? "text-foreground" : "text-muted-foreground"}`}>
+                      <td className={`px-4 py-3 text-sm ${user.facilities?.name ? "text-[#1A1614]" : "text-[#9A928D]"}`}>
                         {user.facilities?.name ?? "—"}
                       </td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusStyle[user.status]}`}>
-                          <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                        <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${statusStyle[user.status]}`}>
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
                           {statusLabel[user.status]}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-0.5">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => openEdit(user)} title="Sửa" aria-label="Sửa">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => handleResetPassword(user)} title="Đặt lại mật khẩu" aria-label="Đặt lại mật khẩu">
-                            <RotateCcw className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setDeleteTarget(user)} title="Xóa" aria-label="Xóa">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <button type="button" className="grid h-[30px] w-[30px] cursor-pointer place-items-center rounded-[7px] text-[#7A726D] transition-colors duration-200 hover:bg-[#F5F4F2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] motion-reduce:transition-none" onClick={() => openEdit(user)} title="Sửa" aria-label="Sửa">
+                            <Pencil className="h-[15px] w-[15px]" />
+                          </button>
+                          <button type="button" className="grid h-[30px] w-[30px] cursor-pointer place-items-center rounded-[7px] text-[#7A726D] transition-colors duration-200 hover:bg-[#F5F4F2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] motion-reduce:transition-none" onClick={() => handleResetPassword(user)} title="Đặt lại mật khẩu" aria-label="Đặt lại mật khẩu">
+                            <RotateCcw className="h-[15px] w-[15px]" />
+                          </button>
+                          <button type="button" className="grid h-[30px] w-[30px] cursor-pointer place-items-center rounded-[7px] text-[#C41740] transition-colors duration-200 hover:bg-[#FCEBEF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] motion-reduce:transition-none" onClick={() => setDeleteTarget(user)} title="Xóa" aria-label="Xóa">
+                            <Trash2 className="h-[15px] w-[15px]" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -359,16 +365,28 @@ const AdminUsersContent = () => {
           </div>
         )}
 
-        <div className="flex items-center justify-between px-6 py-4 border-t">
-          <p className="text-sm text-muted-foreground">
-            Tổng <span className="font-semibold text-foreground">{total}</span> người dùng
+        <div className="flex items-center justify-between border-t border-[#EFECEA] bg-[#FAF9F8] px-4 py-3">
+          <p className="text-sm text-[#7A726D]">
+            Tổng <span className="font-semibold text-[#1A1614]">{total}</span> người dùng
           </p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+              className="h-8 cursor-pointer rounded-lg border-[#D9D5D1] bg-white font-semibold text-[#1A1614] hover:bg-[#F5F4F2]"
+            >
               Trước
             </Button>
-            <span className="text-sm self-center">{page} / {totalPages}</span>
-            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+            <span className="text-sm text-[#4A4440]">{page} / {totalPages}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              className="h-8 cursor-pointer rounded-lg border-[#D9D5D1] bg-white font-semibold text-[#1A1614] hover:bg-[#F5F4F2]"
+            >
               Sau
             </Button>
           </div>
@@ -376,83 +394,88 @@ const AdminUsersContent = () => {
       </div>
 
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editing ? "Sửa người dùng" : "Thêm người dùng mới"}</DialogTitle>
+        <DialogContent
+          hideClose
+          overlayClassName="bg-[rgba(26,22,20,0.4)]"
+          className="max-w-[480px] gap-0 overflow-hidden rounded-[14px] border-0 bg-white p-0 text-[#1A1614] shadow-[0_24px_64px_rgba(26,22,20,0.3)]"
+        >
+          <DialogHeader className="flex-row items-start justify-between space-y-0 px-5 pb-3 pt-[18px] text-left">
+            <DialogTitle className="text-[17px] font-bold text-[#1A1614]">
+              {editing ? "Sửa người dùng" : "Thêm người dùng mới"}
+            </DialogTitle>
+            <button
+              type="button"
+              onClick={() => setFormOpen(false)}
+              className="grid h-[30px] w-[30px] cursor-pointer place-items-center rounded-lg border border-[#E1DDDA] bg-white text-base text-[#4A4440] transition-colors duration-200 hover:bg-[#FAF9F8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]"
+              aria-label="Đóng"
+            >
+              ×
+            </button>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <Label htmlFor="fullName">Họ tên</Label>
-              <Input id="fullName" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
+          <div className="grid gap-3.5 px-5 pb-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="fullName" className="text-xs font-semibold text-[#4A4440]">Họ tên <span className="text-[#C41740]">*</span></Label>
+              <Input id="fullName" value={form.fullName} placeholder="Nguyễn Văn A" onChange={(e) => setForm({ ...form, fullName: e.target.value })} className={fieldClass} />
             </div>
             {!editing && (
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="email" className="text-xs font-semibold text-[#4A4440]">Email <span className="text-[#C41740]">*</span></Label>
+                <Input id="email" type="email" value={form.email} placeholder="ten@email.com" onChange={(e) => setForm({ ...form, email: e.target.value })} className={fieldClass} />
               </div>
             )}
-            <div>
-              <Label htmlFor="phone">SĐT</Label>
-              <Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="phone" className="text-xs font-semibold text-[#4A4440]">Số điện thoại</Label>
+              <Input id="phone" value={form.phone} placeholder="09xx xxx xxx" onChange={(e) => setForm({ ...form, phone: e.target.value })} className={fieldClass} />
             </div>
-            <div>
-              <Label>Vai trò</Label>
-              <Select value={form.roleId} onValueChange={(v) => setForm({ ...form, roleId: v })}>
-                <SelectTrigger><SelectValue placeholder="Chọn vai trò" /></SelectTrigger>
-                <SelectContent>
-                  {roles.map((r) => (
-                    <SelectItem key={r.id} value={r.id}>{r.name}{r.is_system ? " (hệ thống)" : ""}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Cơ sở</Label>
-              <Select value={form.facilityId || "__none__"} onValueChange={(v) => setForm({ ...form, facilityId: v === "__none__" ? "" : v })}>
-                <SelectTrigger><SelectValue placeholder="Chọn cơ sở" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— Không —</SelectItem>
-                  {facilities.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-[#4A4440]">Vai trò <span className="text-[#C41740]">*</span></span>
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Vai trò">
+                {roles.map((r) => (
+                  <button key={r.id} type="button" aria-pressed={form.roleId === r.id} className={chipClass(form.roleId === r.id)} onClick={() => setForm({ ...form, roleId: r.id })}>
+                    {r.name}
+                  </button>
+                ))}
+              </div>
             </div>
             {isDoctor && (
-              <div>
-                <Label>Chuyên khoa (Doctor)</Label>
-                <Select
-                  value={form.specialty || "__none__"}
-                  onValueChange={(v) => setForm({ ...form, specialty: v === "__none__" ? "" : v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn chuyên khoa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">— Không —</SelectItem>
-                    {specialties.map((s) => (
-                      <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-semibold text-[#4A4440]">Chuyên khoa</span>
+                <div className="flex flex-wrap gap-1.5" role="group" aria-label="Chuyên khoa">
+                  <button type="button" aria-pressed={!form.specialty} className={chipClass(!form.specialty)} onClick={() => setForm({ ...form, specialty: "" })}>Không</button>
+                  {specialties.map((s) => (
+                    <button key={s.id} type="button" aria-pressed={form.specialty === s.name} className={chipClass(form.specialty === s.name)} onClick={() => setForm({ ...form, specialty: s.name })}>
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
-            <div>
-              <Label>Trạng thái</Label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as AdminUserStatus })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Hoạt động</SelectItem>
-                  <SelectItem value="inactive">Ngưng</SelectItem>
-                  <SelectItem value="locked">Khóa</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-[#4A4440]">Cơ sở</span>
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Cơ sở">
+                <button type="button" aria-pressed={!form.facilityId} className={chipClass(!form.facilityId)} onClick={() => setForm({ ...form, facilityId: "" })}>Không</button>
+                {facilities.map((f) => (
+                  <button key={f.id} type="button" aria-pressed={form.facilityId === f.id} className={chipClass(form.facilityId === f.id)} onClick={() => setForm({ ...form, facilityId: f.id })}>
+                    {f.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-[#4A4440]">Trạng thái</span>
+              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Trạng thái">
+                {(["active", "inactive", "locked"] as AdminUserStatus[]).map((status) => (
+                  <button key={status} type="button" aria-pressed={form.status === status} className={chipClass(form.status === status)} onClick={() => setForm({ ...form, status })}>
+                    {statusLabel[status]}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setFormOpen(false)}>Hủy</Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+          <DialogFooter className="gap-2 border-t border-[#EFECEA] bg-[#FAF9F8] px-5 py-3 sm:space-x-0">
+            <Button variant="outline" onClick={() => setFormOpen(false)} className="h-9 cursor-pointer rounded-lg border-[#D9D5D1] bg-white font-semibold text-[#1A1614] hover:bg-[#F5F4F2]">Hủy</Button>
+            <Button onClick={handleSave} disabled={saving} className="h-9 cursor-pointer rounded-lg bg-[#C41740] font-semibold text-white hover:bg-[#A8123A] focus-visible:ring-[#C41740]">
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" />}
               Lưu
             </Button>
           </DialogFooter>
@@ -460,9 +483,12 @@ const AdminUsersContent = () => {
       </Dialog>
 
       <Dialog open={!!tempPassword} onOpenChange={() => { setTempPassword(null); setCreatedSignPin(null); }}>
-        <DialogContent>
+        <DialogContent
+          overlayClassName="bg-[rgba(26,22,20,0.4)]"
+          className="rounded-[14px] border-[#E8E5E2] bg-white text-[#1A1614] shadow-[0_24px_64px_rgba(26,22,20,0.3)]"
+        >
           <DialogHeader>
-            <DialogTitle>Thông tin tài khoản mới</DialogTitle>
+            <DialogTitle className="text-[17px] font-bold text-[#1A1614]">Thông tin tài khoản mới</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground mb-2">
             Sao chép thông tin bên dưới — email thiết lập mật khẩu cũng đã được gửi tới user (link dẫn về trang đặt mật khẩu lần đầu).
@@ -483,7 +509,9 @@ const AdminUsersContent = () => {
             )}
           </div>
           <DialogFooter>
-            <Button onClick={() => {
+            <Button
+              className="h-9 cursor-pointer rounded-lg bg-[#C41740] font-semibold text-white hover:bg-[#A8123A] focus-visible:ring-[#C41740]"
+              onClick={() => {
               const text = createdSignPin
                 ? `Mật khẩu: ${tempPassword}\nPIN ký duyệt: ${createdSignPin}`
                 : (tempPassword ?? '');
@@ -506,7 +534,7 @@ const AdminUsersContent = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+            <AlertDialogAction onClick={handleDelete} className="bg-[#C41740] text-white hover:bg-[#A8123A]">
               Xóa
             </AlertDialogAction>
           </AlertDialogFooter>

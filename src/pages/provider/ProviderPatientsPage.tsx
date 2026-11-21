@@ -50,10 +50,11 @@ import {
 import { translatePatientStatus, UI_FALLBACK } from "@/config/ui-labels";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { searchPatientRecords } from "@/lib/patient-records";
+import { canReviewPatientProfile, searchPatientRecords } from "@/lib/patient-records";
 import type { PatientRecordListRow } from "@/types/patient-portal";
 import { PatientListFilters, type PatientFilters } from "@/components/provider/PatientListFilters";
-import { searchPatientsWithAppointments } from "@/lib/patient-appointment-filter-api";
+import { fetchLatestAppointmentByProfile, searchPatientsWithAppointments, type LatestAppointmentSnapshot } from "@/lib/patient-appointment-filter-api";
+import { appointmentListTone, joinMeta, sexLabel } from "@/lib/patient-list-presentation";
 import { fetchDoctors } from "@/lib/master-data-api";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -153,6 +154,8 @@ type PatientTableRow = PatientListItem & {
   phone: string | null;
   code: string;
   last_visit_date: string | null;
+  sex_label: string | null;
+  appointment_status: string | null;
 };
 
 function patientCode(id: string): string {
@@ -182,14 +185,20 @@ function ageFromDob(iso: string | null | undefined): number | null {
   return age >= 0 ? age : null;
 }
 
-function mapRecordToListItem(row: PatientRecordListRow): PatientTableRow {
-  const activity = row.updated_at ?? row.submitted_at;
+function mapRecordToListItem(
+  row: PatientRecordListRow,
+  latest: LatestAppointmentSnapshot | null,
+): PatientTableRow {
+  const visitAt = latest?.visitAt || null;
   let last_visit_label = "—";
-  if (activity) {
+  if (visitAt) {
     try {
-      last_visit_label = formatDistanceToNow(new Date(activity), { locale: vi, addSuffix: true });
+      last_visit_label = formatDistanceToNow(new Date(`${visitAt}T12:00:00`), {
+        locale: vi,
+        addSuffix: true,
+      });
     } catch {
-      last_visit_label = activity.slice(0, 10);
+      last_visit_label = visitAt;
     }
   }
   return {
@@ -197,11 +206,21 @@ function mapRecordToListItem(row: PatientRecordListRow): PatientTableRow {
     full_name: row.full_name,
     date_of_birth: row.date_of_birth,
     last_visit_label,
-    last_visit_date: activity,
+    last_visit_date: visitAt,
     status: row.submitted_at ? "Active" : "Draft",
     phone: row.phone_number,
     code: patientCode(row.id),
+    sex_label: sexLabel(row.bhyt_gender, row.preferred_pronouns),
+    appointment_status: latest?.status || null,
   };
+}
+
+async function withLatestAppointments(rows: PatientRecordListRow[]): Promise<PatientTableRow[]> {
+  const latest = await fetchLatestAppointmentByProfile(
+    supabase,
+    rows.map((row) => row.id),
+  );
+  return rows.map((row) => mapRecordToListItem(row, latest.get(row.id) ?? null));
 }
 
 type VitalFlag = "hi" | "lo" | null;
@@ -629,18 +648,30 @@ const ProviderPatientsPage = () => {
         const { rows, total, error: listError } = await searchPatientsWithAppointments(supabase, listQueryParams);
         if (listError) throw listError;
         return {
-          items: rows.map(mapRecordToListItem),
+          items: await withLatestAppointments(rows),
           total,
         };
       }
       const { rows, total, error: listError } = await searchPatientRecords(supabase, listQueryParams);
       if (listError) throw listError;
       return {
-        items: rows.map(mapRecordToListItem),
+        items: await withLatestAppointments(rows),
         total,
       };
     },
     placeholderData: (previous) => previous,
+  });
+
+  const { data: activePatientCount } = useQuery({
+    queryKey: ["patient-records", "active-count"],
+    queryFn: async () => {
+      const { count, error: countError } = await supabase
+        .from("patient")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "ACTIVE");
+      if (countError) throw countError;
+      return count ?? 0;
+    },
   });
 
   const patientSummaries = patientListData?.items ?? [];
@@ -659,6 +690,10 @@ const ProviderPatientsPage = () => {
     });
     return out;
   }, [patientListTotalPages, listPage]);
+  const showingDemoList =
+    patientSummaries.length === 0 && !debouncedSearch && !hasAppointmentFilters && !isListLoading;
+  const resultCount =
+    showingDemoList && patientListTotal === 0 ? demoPatients.length : patientListTotal;
   const patientListFrom =
     patientListTotal === 0 ? 0 : (listPage - 1) * PATIENT_LIST_PAGE_SIZE + 1;
   const patientListTo =
@@ -904,28 +939,29 @@ const ProviderPatientsPage = () => {
         </div>
       ) : null}
 
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <div className="mr-auto flex flex-col gap-0.5">
-            <h2 className="text-lg font-semibold">Danh sách bệnh nhân</h2>
-            <p className="text-xs text-muted-foreground">
-              {patientSummaries.length > 0 ? patientListTotal : demoPatients.length} kết quả
+            <h2 className="text-lg font-semibold text-[#1A1614]">Danh sách bệnh nhân</h2>
+            <p className="text-xs text-[#7A726D]">
+              {resultCount} kết quả
+              {activePatientCount != null ? ` · ${activePatientCount} bệnh nhân đang hoạt động` : ""}
               {isListFetching && !isListLoading ? (
                 <Loader2 className="ml-1 inline h-3 w-3 animate-spin" aria-hidden="true" />
               ) : null}
             </p>
           </div>
-          <div className="relative w-full max-w-xs">
+          <div className="relative w-full max-w-[300px]">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#7A726D]"
               aria-hidden="true"
             />
             <Input
               type="search"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Tên, CCCD, SĐT, mã bệnh nhân…"
-              className="h-9 bg-card pl-9"
+              placeholder="Tên, CCCD, SĐT…"
+              className="h-[34px] rounded-lg border-[#E1DDDA] bg-white pl-8 text-[#1A1614] shadow-none placeholder:text-[#9A928D] focus-visible:ring-[#C41740]/30"
               aria-label="Tìm bệnh nhân"
             />
           </div>
@@ -940,16 +976,16 @@ const ProviderPatientsPage = () => {
           onReset={handleResetFilters}
         />
 
-        <section className="overflow-hidden rounded-xl border bg-card">
+        <section className="overflow-hidden rounded-[10px] border border-[#E8E5E2] bg-white">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
+            <table className="w-full min-w-[720px] text-sm text-[#1A1614]">
               <thead>
-                <tr className="border-b bg-muted/40 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-4 py-2.5 font-semibold">Bệnh nhân</th>
-                  <th className="px-4 py-2.5 font-semibold">Liên hệ</th>
-                  <th className="px-4 py-2.5 font-semibold">Lần khám</th>
-                  <th className="px-4 py-2.5 font-semibold">Trạng thái</th>
-                  <th className="w-8 px-4 py-2.5">
+                <tr className="border-b border-[#EFECEA] bg-[#FAF9F8] text-left text-[11px] font-semibold uppercase tracking-wider text-[#7A726D]">
+                  <th className="px-[18px] py-2.5">Bệnh nhân</th>
+                  <th className="px-3.5 py-2.5">Liên hệ</th>
+                  <th className="px-3.5 py-2.5">Lần khám</th>
+                  <th className="px-3.5 py-2.5">Lịch hẹn</th>
+                  <th className="w-8 px-[18px] py-2.5">
                     <span className="sr-only">Mở chi tiết</span>
                   </th>
                 </tr>
@@ -958,6 +994,8 @@ const ProviderPatientsPage = () => {
                 {patientSummaries.length > 0
                   ? patientSummaries.map((row) => {
                       const age = ageFromDob(row.date_of_birth);
+                      const dob = formatViDate(row.date_of_birth);
+                      const tone = appointmentListTone(row.appointment_status);
                       return (
                         <tr
                           key={row.id}
@@ -969,43 +1007,45 @@ const ProviderPatientsPage = () => {
                               handleSelectPatient(row.id);
                             }
                           }}
-                          className="cursor-pointer border-b transition-colors last:border-0 hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
+                          className="h-[62px] cursor-pointer border-b border-[#F0EDEB] transition-colors duration-200 last:border-0 hover:bg-[#FBFAF9] focus-visible:bg-[#FBFAF9] focus-visible:outline-none"
                         >
-                          <td className="px-4 py-3">
+                          <td className="px-[18px]">
                             <div className="flex min-w-0 items-center gap-3">
-                              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#FCEBEF] text-sm font-bold text-[#C41740]">
                                 {initialOf(row.full_name)}
                               </span>
-                              <div className="min-w-0">
+                              <div className="min-w-0 leading-snug">
                                 <p className="truncate font-semibold">{row.full_name ?? UI_FALLBACK.patient}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {age != null ? `${age} tuổi · ` : ""}
-                                  {formatViDate(row.date_of_birth)}
+                                <p className="text-xs text-[#7A726D]">
+                                  {joinMeta([row.sex_label, age != null ? `${age} tuổi` : null, dob === "—" ? null : dob])}
                                 </p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3.5">
                             <p className="font-mono text-xs">{row.phone || "—"}</p>
-                            <p className="font-mono text-[11px] text-muted-foreground">{row.code}</p>
+                            <p className="font-mono text-[11px] text-[#9A928D]">{row.code}</p>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3.5 leading-snug">
                             <p>{formatViDate(row.last_visit_date)}</p>
-                            <p className="text-xs text-muted-foreground">{row.last_visit_label}</p>
+                            <p className="text-[11.5px] text-[#9A928D]">{row.last_visit_label}</p>
                           </td>
-                          <td className="px-4 py-3">
-                            <span className={`${STATUS_BADGE_CLASS} ${statusBadgeClass(row.status)}`}>
-                              {translateStatus(row.status ?? "Active")}
+                          <td className="px-3.5">
+                            <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-[3px] text-[11.5px] font-semibold ${tone.className}`}>
+                              <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+                              {tone.label}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground">
+                          <td className="px-[18px] text-[#B5ADA8]">
                             <ChevronRight className="h-4 w-4" aria-hidden="true" />
                           </td>
                         </tr>
                       );
                     })
                   : !isListBusy && !debouncedSearch && !hasAppointmentFilters
-                    ? demoPatients.map((patient) => (
+                    ? demoPatients.map((patient) => {
+                        const tone = appointmentListTone(null);
+                        return (
                         <tr
                           key={patient.key}
                           tabIndex={0}
@@ -1013,96 +1053,96 @@ const ProviderPatientsPage = () => {
                           onKeyDown={(e) => {
                             if (e.key === "Enter") handleSelectPatient(demoPatientId(patient.key));
                           }}
-                          className="cursor-pointer border-b transition-colors last:border-0 hover:bg-muted/40"
+                          className="h-[62px] cursor-pointer border-b border-[#F0EDEB] transition-colors duration-200 last:border-0 hover:bg-[#FBFAF9]"
                         >
-                          <td className="px-4 py-3">
+                          <td className="px-[18px]">
                             <div className="flex items-center gap-3">
-                              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#FCEBEF] text-sm font-bold text-[#C41740]">
                                 {initialOf(patient.name)}
                               </span>
-                              <div>
+                              <div className="leading-snug">
                                 <p className="font-semibold">{patient.name}</p>
-                                <p className="text-xs text-muted-foreground">{patient.dob}</p>
+                                <p className="text-xs text-[#7A726D]">{patient.dob}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 font-mono text-xs">{patient.phone ?? "—"}</td>
-                          <td className="px-4 py-3 text-xs text-muted-foreground">{patient.last}</td>
-                          <td className="px-4 py-3">
-                            <span className={`${STATUS_BADGE_CLASS} ${statusBadgeClass(patient.status)}`}>
-                              {translateStatus(patient.status)}
+                          <td className="px-3.5 font-mono text-xs">{patient.phone ?? "—"}</td>
+                          <td className="px-3.5 text-xs text-[#9A928D]">{patient.last}</td>
+                          <td className="px-3.5">
+                            <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-[3px] text-[11.5px] font-semibold ${tone.className}`}>
+                              <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+                              {tone.label}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground">
+                          <td className="px-[18px] text-[#B5ADA8]">
                             <ChevronRight className="h-4 w-4" aria-hidden="true" />
                           </td>
                         </tr>
-                      ))
+                        );
+                      })
                     : null}
               </tbody>
             </table>
           </div>
 
           {patientSummaries.length === 0 && !isListBusy ? (
-            <p className="px-4 py-6 text-center text-sm text-muted-foreground">
+            <p className="px-4 py-10 text-center text-sm text-[#7A726D]">
               {debouncedSearch || hasAppointmentFilters
-                ? "Không tìm thấy bệnh nhân phù hợp bộ lọc."
+                ? "Không có bệnh nhân phù hợp bộ lọc."
                 : "Đang dùng bệnh nhân demo. Dữ liệu thật sẽ hiển thị khi có hồ sơ bệnh nhân."}
             </p>
           ) : null}
 
           {patientListTotal > 0 ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-[#FAF9F8] px-[18px] py-2.5 text-xs text-[#7A726D]">
               <span>
                 Hiển thị{" "}
-                <span className="font-semibold text-foreground">
+                <span className="font-semibold text-[#1A1614]">
                   {patientListFrom}–{patientListTo}
                 </span>{" "}
                 / {patientListTotal} bệnh nhân
               </span>
               <div className="flex items-center gap-1">
-                <Button
+                <button
                   type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
+                  className="grid h-7 min-w-7 cursor-pointer place-items-center rounded-md border border-[#E1DDDA] bg-white text-[#1A1614] transition-colors duration-200 hover:bg-[#FAF9F8] disabled:cursor-not-allowed disabled:text-[#B5ADA8]"
                   aria-label="Trang trước"
                   disabled={listPage <= 1 || isListFetching}
                   onClick={() => setListPage((p) => Math.max(1, p - 1))}
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
                 {pageNumbers.map((n, i) =>
                   n === null ? (
                     <span key={`gap-${i}`} className="px-1">
                       …
                     </span>
                   ) : (
-                    <Button
+                    <button
                       key={n}
                       type="button"
-                      variant={n === listPage ? "default" : "outline"}
-                      size="icon"
-                      className="h-8 w-8 text-xs"
+                      className={
+                        n === listPage
+                          ? "grid h-7 min-w-7 cursor-pointer place-items-center rounded-md bg-[#C41740] px-1.5 text-xs font-semibold text-white"
+                          : "grid h-7 min-w-7 cursor-pointer place-items-center rounded-md border border-[#E1DDDA] bg-white px-1.5 text-xs text-[#1A1614] transition-colors duration-200 hover:bg-[#FAF9F8] disabled:cursor-not-allowed"
+                      }
                       aria-current={n === listPage ? "page" : undefined}
                       disabled={isListFetching}
                       onClick={() => setListPage(n)}
                     >
                       {n}
-                    </Button>
+                    </button>
                   ),
                 )}
-                <Button
+                <button
                   type="button"
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8"
+                  className="grid h-7 min-w-7 cursor-pointer place-items-center rounded-md border border-[#E1DDDA] bg-white text-[#1A1614] transition-colors duration-200 hover:bg-[#FAF9F8] disabled:cursor-not-allowed disabled:text-[#B5ADA8]"
                   aria-label="Trang sau"
                   disabled={listPage >= patientListTotalPages || isListFetching}
                   onClick={() => setListPage((p) => Math.min(patientListTotalPages, p + 1))}
                 >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           ) : null}
@@ -1176,7 +1216,7 @@ const ProviderPatientsPage = () => {
             </div>
           </DialogHeader>
 
-          <div className="min-h-0 flex-1 overflow-y-auto bg-muted/30 px-6 py-5">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-[#F5F4F2] px-6 py-5">
             {isDetailBusy ? (
               <p className="mb-3 text-sm text-muted-foreground">Đang tải hồ sơ bệnh nhân…</p>
             ) : null}
@@ -1469,7 +1509,7 @@ const ProviderPatientsPage = () => {
         onSuccess={() => {
           void queryClient.invalidateQueries({ queryKey: PATIENT_LIST_QUERY_KEY });
         }}
-        canReview={isAdmin}
+        canReview={canReviewPatientProfile(role)}
       />
     </>
   );

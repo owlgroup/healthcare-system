@@ -89,69 +89,48 @@ export default function SoapVersionDiff({
   const isAddendum = currentVersion.action === 'ADDENDUM_CREATED';
   const hasAddendumDetails = isAddendum && (currentVersion.addendum_reason || currentVersion.addendum_soap_snapshot);
 
+  const addendumBody = SOAP_SECTIONS
+    .map((section) => currentVersion.addendum_soap_snapshot?.[section.field]?.trim())
+    .filter(Boolean)
+    .join('\n');
+
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="pb-4 border-b border-border">
-        <h3 className="text-base font-bold text-foreground">
-          Chi tiết Phiên bản {currentVersion.version}
+    <div className="overflow-hidden rounded-[10px] border border-[#E8E5E2] bg-white">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#EFECEA] px-3.5 py-2.5">
+        <h3 className="text-sm font-semibold text-[#1A1614]">
+          Chi tiết phiên bản {currentVersion.version}
+          {currentVersion.is_current ? ' · Hiện tại' : ''}
         </h3>
+        <span className="text-xs text-[#7A726D]">{actorLabel} · {formattedTime}</span>
       </div>
 
-      {/* Addendum Details Section */}
       {hasAddendumDetails && (
-        <div className="bg-violet-50 border-2 border-violet-200 rounded-xl p-5 space-y-4">
-          <h4 className="text-sm font-bold text-violet-800 flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Thông tin phiếu bổ sung
-          </h4>
-
-          {currentVersion.addendum_reason && (
-            <div className="space-y-1">
-              <p className="text-xs font-medium text-violet-700">Lý do tạo phiếu bổ sung:</p>
-              <p className="text-sm text-violet-900 bg-white rounded-lg p-3 border border-violet-200">
-                {currentVersion.addendum_reason}
-              </p>
-            </div>
-          )}
-
-          {currentVersion.addendum_soap_snapshot && (
-            <div className="space-y-3">
-              <p className="text-xs font-medium text-violet-700">Nội dung phiếu bổ sung:</p>
-              <div className="bg-white rounded-lg border border-violet-200 divide-y divide-violet-100">
-                {SOAP_SECTIONS.map((section) => {
-                  const value = currentVersion.addendum_soap_snapshot?.[section.field];
-                  if (!value?.trim()) return null;
-                  return (
-                    <div key={section.field} className="p-3">
-                      <p className="text-xs font-semibold text-violet-700 mb-1">{section.label}</p>
-                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{value}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+        <div className="grid grid-cols-[170px_minmax(0,1fr)] border-b border-[#F0EDEB]">
+          <span className="border-b border-[#F0EDEB] px-3.5 py-2.5 font-semibold text-[#6D3FC9]">Lý do bổ sung</span>
+          <span className="border-b border-[#F0EDEB] px-3.5 py-2.5 text-sm text-[#1A1614]">
+            {currentVersion.addendum_reason || '—'}
+          </span>
+          <span className="px-3.5 py-2.5 font-semibold text-[#6D3FC9]">Nội dung bổ sung</span>
+          <span className="whitespace-pre-wrap px-3.5 py-2.5 text-sm text-[#1A1614]">
+            {addendumBody || '—'}
+          </span>
         </div>
       )}
 
       {hasNoSnapshots ? (
-        <div className="bg-white rounded-xl p-8 text-center border border-border shadow-sm">
-          <p className="text-sm text-muted-foreground">
+        <div className="px-3.5 py-6 text-center">
+          <p className="text-sm text-[#7A726D]">
             Phiên bản này được ghi nhận trước khi hệ thống lưu chi tiết nội dung.
           </p>
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="mt-2 text-xs text-[#9A928D]">
             Thay đổi: {currentVersion.changed_fields.length > 0
               ? currentVersion.changed_fields.map((f) => f.replace('_text', '').toUpperCase()).join(', ')
               : 'Không xác định'}
           </p>
         </div>
       ) : (
-        <>
-          {/* Legend & Filters */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-3 p-3.5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-5 text-sm text-muted-foreground">
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 rounded-md bg-red-100 border border-red-300" />
@@ -168,13 +147,14 @@ export default function SoapVersionDiff({
             </div>
 
             <div className="flex items-center gap-2">
+              <span className="text-xs text-[#7A726D]">{changedCount} mục đã chỉnh sửa</span>
               <button
                 type="button"
                 onClick={() => handleToggle(true)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all cursor-pointer ${
+                className={`h-[30px] cursor-pointer rounded-md border px-3 text-xs font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] ${
                   effectiveShowOnlyChanges
-                    ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                    : 'bg-white border-border text-muted-foreground hover:bg-gray-50 hover:border-gray-300'
+                    ? 'border-[#C41740] bg-[#C41740] text-white'
+                    : 'border-[#E1DDDA] bg-white text-[#4A4440] hover:border-[#C41740]'
                 }`}
               >
                 Chỉ xem thay đổi
@@ -182,10 +162,10 @@ export default function SoapVersionDiff({
               <button
                 type="button"
                 onClick={() => handleToggle(false)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all cursor-pointer ${
+                className={`h-[30px] cursor-pointer rounded-md border px-3 text-xs font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740] ${
                   !effectiveShowOnlyChanges
-                    ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                    : 'bg-white border-border text-muted-foreground hover:bg-gray-50 hover:border-gray-300'
+                    ? 'border-[#C41740] bg-[#C41740] text-white'
+                    : 'border-[#E1DDDA] bg-white text-[#4A4440] hover:border-[#C41740]'
                 }`}
               >
                 Xem tất cả
@@ -201,7 +181,7 @@ export default function SoapVersionDiff({
           )}
 
           {/* Comparison Table */}
-          <div className="bg-white border-2 border-border rounded-xl overflow-hidden shadow-sm">
+          <div className="overflow-hidden rounded-[10px] border border-[#E8E5E2] bg-white">
             <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="bg-gray-50 border-b-2 border-border">
@@ -272,7 +252,7 @@ export default function SoapVersionDiff({
               </TableBody>
             </Table>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

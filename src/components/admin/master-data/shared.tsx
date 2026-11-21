@@ -214,23 +214,22 @@ export function EntityTable<T>({
   const isEmpty = total === 0 && !loading;
 
   return (
-    <div className="bg-card rounded-xl border border-border/50 shadow-sm overflow-hidden mb-12">
-      {/* Toolbar */}
-      <div className="p-4 sm:px-5 border-b border-border/40 space-y-3">
-        <label className="relative flex items-center">
-          <Search className="absolute left-3.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+    <div className="overflow-hidden rounded-xl border border-[#E8E5E2] bg-white">
+      <div className="flex flex-wrap items-center gap-3 border-b border-[#EFECEA] px-4 py-3">
+        <label className="flex h-9 min-w-0 flex-1 basis-full items-center gap-2 rounded-lg border border-[#E1DDDA] bg-[#FAF9F8] px-3 text-[#7A726D] transition-colors duration-200 focus-within:border-[#C41740] focus-within:ring-2 focus-within:ring-[#C41740]/20">
+          <Search className="h-3.5 w-3.5 shrink-0" aria-hidden />
           <input
             type="search"
             value={query.search}
             onChange={(e) => onQueryChange({ search: e.target.value })}
-            placeholder={searchPlaceholder ?? `Tìm kiếm ${entityLabel}...`}
+            placeholder={searchPlaceholder ?? `Tìm kiếm ${entityLabel}…`}
             aria-label={searchPlaceholder ?? `Tìm kiếm ${entityLabel}`}
-            className="w-full h-10 rounded-lg border border-border bg-muted/40 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            className="min-w-0 flex-1 border-0 bg-transparent text-sm text-[#1A1614] outline-none placeholder:text-[#9A928D] focus:ring-0"
           />
         </label>
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex w-full flex-wrap items-center justify-between gap-2">
           {hasActiveField && statusCounts ? (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-xs text-[#7A726D]">
               {([
                 ['active', `${statusCounts.active} hoạt động`],
                 ['inactive', `${statusCounts.inactive} vô hiệu`],
@@ -244,8 +243,8 @@ export function EntityTable<T>({
                       onClick={() => onQueryChange({ status: selected ? 'all' : value })}
                       aria-pressed={selected}
                       title={selected ? 'Bỏ lọc' : `Chỉ hiện bản ghi ${value === 'active' ? 'hoạt động' : 'vô hiệu'}`}
-                      className={`rounded px-1 py-0.5 transition-colors cursor-pointer hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${
-                        selected ? 'bg-accent text-primary font-semibold' : ''
+                      className={`cursor-pointer rounded px-1 py-0.5 transition-colors duration-200 hover:text-[#C41740] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]/30 motion-reduce:transition-none ${
+                        selected ? 'font-semibold text-[#C41740]' : ''
                       }`}
                     >
                       {label}
@@ -257,14 +256,14 @@ export function EntityTable<T>({
                 <button
                   type="button"
                   onClick={() => onQueryChange({ status: 'all' })}
-                  className="ml-1 font-semibold text-primary hover:underline cursor-pointer"
+                  className="ml-1 cursor-pointer font-semibold text-[#C41740] hover:underline"
                 >
                   Bỏ lọc
                 </button>
               )}
             </div>
           ) : (
-            <span className="text-xs text-muted-foreground">{total} {entityLabel}</span>
+            <span className="text-xs text-[#7A726D]">{total} {entityLabel}</span>
           )}
           <div className="flex items-center gap-2">
             {toolbarExtra}
@@ -273,7 +272,7 @@ export function EntityTable<T>({
                 type="button"
                 onClick={handleExport}
                 disabled={total === 0 || isExporting}
-                className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition-colors cursor-pointer hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex cursor-pointer items-center gap-1.5 rounded-[7px] px-2 py-1 text-xs font-medium text-[#7A726D] transition-colors duration-200 hover:bg-[#F5F4F2] hover:text-[#1A1614] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]/30 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
                 title="Xuất CSV"
               >
                 {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
@@ -285,27 +284,26 @@ export function EntityTable<T>({
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        <div className="flex justify-center py-16" role="status">
+          <Loader2 className="h-5 w-5 animate-spin text-[#C41740]" />
+          <span className="sr-only">Đang tải</span>
         </div>
       ) : isEmpty ? (
-        <div className="p-12 text-center text-sm text-muted-foreground">
+        <div className="px-4 py-10 text-center text-sm text-[#7A726D]">
           {searchNorm || query.status !== 'all'
-            ? searchNorm
-              ? `Không tìm thấy kết quả cho "${query.search.trim()}".`
-              : 'Không có bản ghi phù hợp với bộ lọc.'
+            ? 'Không có kết quả phù hợp.'
             : 'Chưa có dữ liệu.'}
         </div>
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-muted/40">
-                <tr className="border-b border-border/40">
+            <table className="w-full min-w-[640px] text-left text-sm text-[#1A1614]">
+              <thead className="bg-[#FAF9F8]">
+                <tr className="border-b border-[#EFECEA]">
                   {headers.map((h, i) => (
                     <th
                       key={h || i}
-                      className={`px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground ${
+                      className={`px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-[#7A726D] ${
                         i === headers.length - 1 ? 'text-right' : ''
                       }`}
                     >
@@ -314,13 +312,13 @@ export function EntityTable<T>({
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/30">
+              <tbody>
                 {rows.map((row) => {
                   const inactive = hasActiveField && getIsActive && !getIsActive(row);
                   return (
                     <tr
                       key={getRowKey(row)}
-                      className={`hover:bg-muted/30 transition-colors h-14 ${
+                      className={`border-b border-[#F0EDEB] transition-colors duration-200 hover:bg-[#FCFBFA] motion-reduce:transition-none ${
                         inactive ? '[&>td:not(:last-child)]:opacity-60' : ''
                       }`}
                     >
@@ -332,30 +330,34 @@ export function EntityTable<T>({
             </table>
           </div>
 
-          {/* Pagination */}
           {total > query.pageSize && (
-            <div className="px-6 py-4 flex items-center justify-between border-t border-border/30">
-              <p className="text-xs text-muted-foreground">
-                Hiển thị {from} đến {to} của {total} {entityLabel}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#EFECEA] bg-[#FAF9F8] px-4 py-2.5">
+              <p className="text-xs text-[#7A726D]">
+                Hiển thị{' '}
+                <span className="font-semibold text-[#1A1614]">{from}–{to}</span>
+                {' '}/ {total} {entityLabel}
               </p>
-              <div className="flex gap-1">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   disabled={safePage <= 1}
                   onClick={() => onQueryChange({ page: safePage - 1 })}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center border border-border text-muted-foreground hover:bg-muted transition-colors disabled:opacity-40"
+                  aria-label="Trang trước"
+                  className="grid h-7 min-w-7 cursor-pointer place-items-center rounded-md border border-[#E1DDDA] bg-white text-[#1A1614] transition-colors duration-200 hover:bg-[#FAF9F8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]/40 disabled:cursor-not-allowed disabled:text-[#B5ADA8] motion-reduce:transition-none"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-3.5 w-3.5" />
                 </button>
                 {visiblePages.map((n) => (
                   <button
                     key={n}
                     type="button"
                     onClick={() => onQueryChange({ page: n })}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-semibold transition-colors ${
+                    aria-label={`Trang ${n}`}
+                    aria-current={n === safePage ? 'page' : undefined}
+                    className={`grid h-7 min-w-7 cursor-pointer place-items-center rounded-md px-1.5 text-xs font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]/40 motion-reduce:transition-none ${
                       n === safePage
-                        ? 'bg-primary text-primary-foreground'
-                        : 'border border-border text-muted-foreground hover:bg-muted'
+                        ? 'bg-[#C41740] text-white'
+                        : 'border border-[#E1DDDA] bg-white text-[#1A1614] hover:bg-[#FAF9F8]'
                     }`}
                   >
                     {n}
@@ -365,9 +367,10 @@ export function EntityTable<T>({
                   type="button"
                   disabled={safePage >= totalPages}
                   onClick={() => onQueryChange({ page: safePage + 1 })}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center border border-border text-muted-foreground hover:bg-muted transition-colors disabled:opacity-40"
+                  aria-label="Trang sau"
+                  className="grid h-7 min-w-7 cursor-pointer place-items-center rounded-md border border-[#E1DDDA] bg-white text-[#1A1614] transition-colors duration-200 hover:bg-[#FAF9F8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]/40 disabled:cursor-not-allowed disabled:text-[#B5ADA8] motion-reduce:transition-none"
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-3.5 w-3.5" />
                 </button>
               </div>
             </div>
@@ -382,10 +385,10 @@ export function EntityTable<T>({
 
 export function ActiveBadge({ active }: { active: boolean }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-      active ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground'
+    <span className={`inline-flex items-center gap-[5px] whitespace-nowrap rounded-[10px] px-[9px] py-0.5 text-[11.5px] font-semibold ${
+      active ? 'bg-[#E9F7EE] text-[#157F3D]' : 'bg-[#F0EEEC] text-[#7A726D]'
     }`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-success' : 'bg-muted-foreground'}`} />
+      <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
       {active ? 'Hoạt động' : 'Vô hiệu'}
     </span>
   );
@@ -410,10 +413,10 @@ function IconActionBtn({ icon: Icon, label, onClick, variant = 'default', disabl
       disabled={disabled}
       title={label}
       aria-label={label}
-      className={`grid h-8 w-8 place-items-center rounded-lg transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-40 disabled:cursor-not-allowed ${
+      className={`grid h-[30px] w-[30px] cursor-pointer place-items-center rounded-[7px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]/30 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none ${
         variant === 'destructive'
-          ? 'text-primary hover:bg-accent'
-          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+          ? 'text-[#C41740] hover:bg-[#FCEBEF]'
+          : 'text-[#7A726D] hover:bg-[#F5F4F2]'
       }`}
     >
       <Icon className="h-4 w-4" />
@@ -437,7 +440,7 @@ export function RowActions({
         type="button"
         onClick={onToggle}
         disabled={toggling}
-        className="mr-1 inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg border border-border bg-card px-3 text-xs font-medium text-foreground transition-colors cursor-pointer hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
+        className="mr-1 inline-flex h-7 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[7px] border border-[#E1DDDA] bg-white px-2.5 text-xs text-[#1A1614] transition-colors duration-200 hover:bg-[#F5F4F2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]/30 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none"
       >
         {toggling && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
         {active ? 'Vô hiệu' : 'Kích hoạt'}
@@ -473,20 +476,26 @@ export function useToggleActive<P>(
 
 // ─── Shared cell classes ──────────────────────────────────────────────────────
 
-export const cellCls = 'px-5 py-3';
-export const cellPrimaryCls = 'px-5 py-3 font-semibold text-sm';
-export const cellMutedCls = 'px-5 py-3 text-sm text-muted-foreground';
+export const cellCls = 'px-4 py-3';
+export const cellPrimaryCls = 'px-4 py-3 font-semibold text-[#1A1614]';
+export const cellMutedCls = 'px-4 py-3 text-[#7A726D]';
 
 // ─── Shared input / field classes ─────────────────────────────────────────────
 
-export const inputCls = 'w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring';
+export const inputCls = 'min-h-[38px] w-full rounded-lg border border-[#E1DDDA] bg-[#FAF9F8] px-3 py-2 text-sm text-[#1A1614] placeholder:text-[#9A928D] focus:outline-none focus:ring-2 focus:ring-[#C41740]/30';
+
+export const catalogDialogCls = 'max-w-[440px] rounded-[14px] border-[#E8E5E2] bg-white text-[#1A1614] shadow-[0_24px_64px_rgba(26,22,20,0.3)]';
+export const catalogOverlayCls = 'bg-[rgba(26,22,20,0.4)]';
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const required = label.includes('*');
+  const text = required ? label.replace('*', '').trim() : label;
   return (
-    <div>
-      <label className="block text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">
-        {label}
-      </label>
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs font-semibold text-[#4A4440]">
+        {text}
+        {required && <span className="text-[#C41740]"> *</span>}
+      </span>
       {children}
     </div>
   );
@@ -499,17 +508,35 @@ export function ActiveStatusField({
   value: boolean;
   onChange: (active: boolean) => void;
 }) {
+  const options = [
+    { active: true, label: 'Hoạt động' },
+    { active: false, label: 'Vô hiệu' },
+  ] as const;
+
   return (
-    <Field label="Trạng thái">
-      <select
-        value={value ? 'active' : 'inactive'}
-        onChange={(e) => onChange(e.target.value === 'active')}
-        className={inputCls}
-      >
-        <option value="active">Hoạt động</option>
-        <option value="inactive">Vô hiệu</option>
-      </select>
-    </Field>
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs font-semibold text-[#4A4440]">Trạng thái</span>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Trạng thái">
+        {options.map((option) => {
+          const selected = value === option.active;
+          return (
+            <button
+              key={option.label}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onChange(option.active)}
+              className={`h-[30px] cursor-pointer whitespace-nowrap rounded-[15px] border px-3 text-[12.5px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]/40 motion-reduce:transition-none ${
+                selected
+                  ? 'border-[#F3C9D3] bg-[#FCEBEF] font-semibold text-[#C41740]'
+                  : 'border-[#E1DDDA] bg-white font-medium text-[#4A4440] hover:bg-[#FAF9F8]'
+              }`}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -559,10 +586,10 @@ export function FormActions({
 }: { saving: boolean; onCancel: () => void; editMode: boolean }) {
   return (
     <div className="flex justify-end gap-2 pt-2">
-      <button type="button" onClick={onCancel} className="rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-muted">
+      <button type="button" onClick={onCancel} className="inline-flex h-9 cursor-pointer items-center rounded-lg border border-[#D9D5D1] bg-white px-3.5 text-sm font-semibold text-[#1A1614] transition-colors duration-200 hover:bg-[#FAF9F8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]/40">
         Hủy
       </button>
-      <button type="submit" disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50 flex items-center gap-2">
+      <button type="submit" disabled={saving} className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-[#C41740] px-3.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[#A8123A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]/40 disabled:cursor-not-allowed disabled:opacity-50">
         {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
         {editMode ? 'Lưu' : 'Thêm'}
       </button>

@@ -9,7 +9,6 @@ import {
 } from "date-fns";
 import { vi } from "date-fns/locale";
 import { formatDistanceToNow } from "date-fns";
-import type { ClinicalTask } from "@/lib/ai-assistant-api";
 import { ADMIN_STATUS_LABEL, type AdminAppointment } from "@/types/admin-appointment";
 import type { PatientRecordListRow } from "@/types/patient-portal";
 
@@ -34,13 +33,6 @@ export type DashboardRecentPatient = {
   last: string;
   status: string;
   age: number | null;
-};
-
-export type DashboardClinicalTaskItem = {
-  id: string;
-  title: string;
-  due: string;
-  done: number;
 };
 
 export type DashboardWeekChartPoint = {
@@ -190,39 +182,6 @@ export function deriveWeeklyChart(
       isToday: isSameDay(d, anchor),
     };
   });
-}
-
-export function taskProgress(status: ClinicalTask["status"]): number {
-  if (status === "IN_PROGRESS") return 50;
-  if (status === "COMPLETED") return 100;
-  return 0;
-}
-
-export function formatTaskDueLabel(dueDate: string, now: Date = new Date()): string {
-  try {
-    const due = parseISO(dueDate);
-    if (isSameDay(due, now)) return "Hôm nay";
-    return formatDistanceToNow(due, { locale: vi, addSuffix: true });
-  } catch {
-    return dueDate.slice(0, 10);
-  }
-}
-
-export function deriveClinicalTaskItems(
-  tasks: ClinicalTask[],
-  limit = 4,
-  now: Date = new Date(),
-): DashboardClinicalTaskItem[] {
-  return tasks
-    .filter((t) => t.status === "PENDING" || t.status === "IN_PROGRESS")
-    .sort((a, b) => a.due_date.localeCompare(b.due_date))
-    .slice(0, limit)
-    .map((t) => ({
-      id: t.id,
-      title: t.title,
-      due: formatTaskDueLabel(t.due_date, now),
-      done: taskProgress(t.status),
-    }));
 }
 
 export function ageFromDob(dob: string | null | undefined, now: Date = new Date()): number | null {

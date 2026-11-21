@@ -1,8 +1,9 @@
+import { getEnv } from "@/lib/env";
 const functionsBase = () => {
-  const override = import.meta.env.VITE_SUPABASE_FUNCTIONS_URL;
+  const override = getEnv("VITE_SUPABASE_FUNCTIONS_URL");
   if (override) return override.replace(/\/$/, "");
 
-  const url = import.meta.env.VITE_SUPABASE_URL;
+  const url = getEnv("VITE_SUPABASE_URL");
   if (!url) throw new Error("VITE_SUPABASE_URL is not configured");
   return `${url.replace(/\/$/, "")}/functions/v1`;
 };
@@ -32,7 +33,7 @@ export class ResetApiError extends Error {
 }
 
 async function postJson<T>(path: string, payload: unknown): Promise<T> {
-  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const anonKey = getEnv("VITE_SUPABASE_ANON_KEY");
   const url = `${functionsBase()}/${path}`;
 
   let res: Response;

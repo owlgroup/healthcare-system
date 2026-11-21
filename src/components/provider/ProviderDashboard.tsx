@@ -1,18 +1,51 @@
 import type { ReactNode } from "react";
 import { ArrowRight, Loader2, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { UI_ACTION, UI_BADGE, translatePatientStatus } from "@/config/ui-labels";
+import { canAccessCustomerRoute } from "@/config/rbac-menu";
+import { usePermissionsOptional } from "@/hooks/use-permissions";
 import { greetingNow } from "@/lib/greeting";
-import { useProviderDashboardData, useProviderDashboardRecentPatients } from "@/hooks/useProviderDashboardData";
+import {
+  useProviderDashboardData,
+  useProviderDashboardRecentPatients,
+  type DashboardPortal,
+} from "@/hooks/useProviderDashboardData";
 import { formatWeekdayDate } from "@/lib/provider-dashboard-utils";
 import { ADMIN_STATUS_COLOR, type AdminAppointmentStatus } from "@/types/admin-appointment";
 
 type ProviderDashboardProps = {
   /** @deprecated dùng Link nội bộ */
   onOpenPatients?: () => void;
+  portal?: DashboardPortal;
 };
+
+type DashboardLinks = {
+  appointments?: string;
+  patients?: string;
+  patientRecords?: string;
+};
+
+const DOCTOR_LINKS: DashboardLinks = {
+  appointments: "/provider-portal/appointments",
+  patients: "/provider-portal/patients",
+  patientRecords: "/provider-portal/patient-records",
+};
+
+const CUSTOMER_LINKS: DashboardLinks = {
+  appointments: "/customer-portal/appointments",
+  patients: "/customer-portal/patients",
+  patientRecords: "/customer-portal/patient-records",
+};
+
+function useDashboardLinks(portal: DashboardPortal): DashboardLinks {
+  const permissionsContext = usePermissionsOptional();
+  if (portal === "doctor") return DOCTOR_LINKS;
+  const permissions = permissionsContext?.permissions ?? new Set<string>();
+  return Object.fromEntries(
+    Object.entries(CUSTOMER_LINKS).filter(([, path]) => canAccessCustomerRoute(permissions, path)),
+  );
+}
 
 type StatCard = {
   label: string;
@@ -97,10 +130,15 @@ function SectionHeader({
   );
 }
 
-const ProviderDashboard = ({ onOpenPatients: _onOpenPatients }: ProviderDashboardProps) => {
+const ProviderDashboard = ({
+  onOpenPatients: _onOpenPatients,
+  portal = "doctor",
+}: ProviderDashboardProps) => {
   const now = new Date();
   const greeting = greetingNow(now);
-  const { data, isLoading, isError, refetch, isFetching } = useProviderDashboardData(now);
+  const links = useDashboardLinks(portal);
+  const isDoctor = portal === "doctor";
+  const { data, isLoading, isError, refetch, isFetching } = useProviderDashboardData(now, portal);
   const {
     data: patientData,
     isLoading: patientsLoading,
@@ -121,7 +159,7 @@ const ProviderDashboard = ({ onOpenPatients: _onOpenPatients }: ProviderDashboar
         : "—",
       badge: "Hôm nay",
       badgeClass: "bg-primary/10 text-primary",
-      href: "/provider-portal/appointments",
+      href: links.appointments,
       loading: isLoading,
     },
     { ...MOCK_LABS_STAT, loading: false },
@@ -136,7 +174,7 @@ const ProviderDashboard = ({ onOpenPatients: _onOpenPatients }: ProviderDashboar
         : "—",
       badge: UI_BADGE.active,
       badgeClass: "bg-success/10 text-success",
-      href: "/provider-portal/patients",
+      href: links.patients,
       loading: patientsLoading,
     },
   ];
@@ -154,7 +192,7 @@ const ProviderDashboard = ({ onOpenPatients: _onOpenPatients }: ProviderDashboar
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-0.5">
           <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            {greeting}, {isLoading ? "…" : data?.doctorName ?? "Bác sĩ"}
+            {greeting}, {isLoading ? "…" : data?.viewerName}
           </h1>
           <p className="text-sm text-muted-foreground">{summaryText}</p>
         </div>
@@ -176,18 +214,22 @@ const ProviderDashboard = ({ onOpenPatients: _onOpenPatients }: ProviderDashboar
               Thử lại
             </Button>
           )}
-          <Link
-            to="/provider-portal/appointments"
-            className="inline-flex h-8 items-center rounded-md border bg-card px-3 text-sm font-medium transition-colors hover:bg-muted"
-          >
-            Xem lịch hẹn
-          </Link>
-          <Link
-            to="/provider-portal/patients"
-            className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-          >
-            {UI_ACTION.openPatients}
-          </Link>
+          {links.appointments && (
+            <Link
+              to={links.appointments}
+              className="inline-flex h-8 items-center rounded-md border bg-card px-3 text-sm font-medium transition-colors hover:bg-muted"
+            >
+              Xem lịch hẹn
+            </Link>
+          )}
+          {links.patients && (
+            <Link
+              to={links.patients}
+              className="inline-flex h-8 items-center rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              {UI_ACTION.openPatients}
+            </Link>
+          )}
         </div>
       </div>
 
@@ -236,7 +278,7 @@ const ProviderDashboard = ({ onOpenPatients: _onOpenPatients }: ProviderDashboar
           <SectionHeader
             title="Lịch khám hôm nay"
             aside={<span className="text-xs capitalize text-muted-foreground">{formatWeekdayDate(now)}</span>}
-            linkTo="/provider-portal/appointments"
+            linkTo={links.appointments}
             linkLabel="Tất cả lịch hẹn"
           />
           {isLoading ? (
@@ -266,12 +308,23 @@ const ProviderDashboard = ({ onOpenPatients: _onOpenPatients }: ProviderDashboar
                       >
                         {item.statusLabel}
                       </span>
-                      <Link
-                        to={item.href}
-                        className="inline-flex h-[30px] items-center whitespace-nowrap rounded-md bg-primary px-3 text-[12.5px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
-                      >
-                        {primaryActionLabel(item.status)}
-                      </Link>
+                      {isDoctor ? (
+                        <Link
+                          to={item.href}
+                          className="inline-flex h-[30px] items-center whitespace-nowrap rounded-md bg-primary px-3 text-[12.5px] font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+                        >
+                          {primaryActionLabel(item.status)}
+                        </Link>
+                      ) : links.appointments ? (
+                        <Link
+                          to={links.appointments}
+                          className="inline-flex h-[30px] items-center whitespace-nowrap rounded-md border bg-card px-3 text-[12.5px] font-semibold transition-colors hover:bg-muted"
+                        >
+                          Chi tiết
+                        </Link>
+                      ) : (
+                        <span aria-hidden="true" />
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -345,78 +398,50 @@ const ProviderDashboard = ({ onOpenPatients: _onOpenPatients }: ProviderDashboar
         </section>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-5">
-        <section className="overflow-hidden rounded-xl border bg-card lg:col-span-3">
-          <SectionHeader title="Bệnh nhân gần đây" linkTo="/provider-portal/patient-records" linkLabel="Xem tất cả" />
-          {patientsLoading ? (
-            <SectionLoading />
-          ) : patientsError ? (
-            <div className="py-8 text-center">
-              <p className="text-sm text-muted-foreground">Không tải được danh sách bệnh nhân.</p>
-              <Button type="button" variant="link" size="sm" className="mt-2" onClick={() => void refetchPatients()}>
-                Thử lại
-              </Button>
-            </div>
-          ) : recentPatients.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Chưa có bệnh nhân.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted/40 text-left text-[11px] uppercase tracking-[0.04em] text-muted-foreground">
-                    <th className="px-4 py-2 font-semibold">Bệnh nhân</th>
-                    <th className="px-2 py-2 font-semibold">Tuổi</th>
-                    <th className="px-2 py-2 font-semibold">Lần khám</th>
-                    <th className="px-4 py-2 font-semibold">Trạng thái</th>
+      <section className="overflow-hidden rounded-xl border bg-card">
+        <SectionHeader title="Bệnh nhân gần đây" linkTo={links.patientRecords} linkLabel="Xem tất cả" />
+        {patientsLoading ? (
+          <SectionLoading />
+        ) : patientsError ? (
+          <div className="py-8 text-center">
+            <p className="text-sm text-muted-foreground">Không tải được danh sách bệnh nhân.</p>
+            <Button type="button" variant="link" size="sm" className="mt-2" onClick={() => void refetchPatients()}>
+              Thử lại
+            </Button>
+          </div>
+        ) : recentPatients.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">Chưa có bệnh nhân.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted/40 text-left text-[11px] uppercase tracking-[0.04em] text-muted-foreground">
+                  <th className="px-4 py-2 font-semibold">Bệnh nhân</th>
+                  <th className="px-2 py-2 font-semibold">Tuổi</th>
+                  <th className="px-2 py-2 font-semibold">Lần khám</th>
+                  <th className="px-4 py-2 font-semibold">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentPatients.map((row) => (
+                  <tr key={row.id} className="h-10 border-t">
+                    <td className="max-w-[220px] truncate px-4 font-medium">{row.name}</td>
+                    <td className="px-2 text-muted-foreground">{row.age ?? "—"}</td>
+                    <td className="whitespace-nowrap px-2 text-muted-foreground">{row.last}</td>
+                    <td className="px-4">
+                      <span
+                        className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${statusPill(row.status)}`}
+                      >
+                        {translatePatientStatus(row.status)}
+                      </span>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {recentPatients.map((row) => (
-                    <tr key={row.id} className="h-10 border-t">
-                      <td className="max-w-[220px] truncate px-4 font-medium">{row.name}</td>
-                      <td className="px-2 text-muted-foreground">{row.age ?? "—"}</td>
-                      <td className="whitespace-nowrap px-2 text-muted-foreground">{row.last}</td>
-                      <td className="px-4">
-                        <span
-                          className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${statusPill(row.status)}`}
-                        >
-                          {translatePatientStatus(row.status)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        <section className="flex flex-col overflow-hidden rounded-xl border bg-card lg:col-span-2">
-          <SectionHeader title="Việc lâm sàng" linkTo="/provider-portal/tasks" linkLabel="Xem tất cả" />
-          {isLoading ? (
-            <SectionLoading />
-          ) : data?.clinicalTasks.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-1 p-6 text-center">
-              <p className="font-semibold text-foreground/80">Chưa có việc lâm sàng</p>
-              <p className="text-xs text-muted-foreground">
-                Việc cần làm sẽ xuất hiện khi có kết quả cần duyệt hoặc phiếu cần ký.
-              </p>
-            </div>
-          ) : (
-            <ul className="space-y-4 p-4">
-              {data?.clinicalTasks.map((task) => (
-                <li key={task.id}>
-                  <div className="mb-1 flex items-start justify-between gap-2">
-                    <p className="text-sm font-medium leading-snug">{task.title}</p>
-                    <span className="shrink-0 text-[11px] text-muted-foreground">{task.due}</span>
-                  </div>
-                  <Progress value={task.done} className="h-1.5" />
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 };

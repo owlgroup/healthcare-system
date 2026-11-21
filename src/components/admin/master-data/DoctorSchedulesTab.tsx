@@ -12,7 +12,7 @@ import type { DoctorSchedule, Doctor, Facility, Room } from '@/types/master-data
 import type { Specialty } from '@/types/master-data';
 import { formatWorkDays, formatTime, DOW_LABELS } from '@/types/master-data';
 import { useRegisterAddAction } from './MasterDataActionsContext';
-import { EntityTable, ActiveBadge, RowActions, useToggleActive, ActiveStatusField, DeleteConfirmDialog, Field, FormActions, inputCls, useEntityDialog, useEntityTableData, cellPrimaryCls, cellMutedCls, cellCls } from './shared';
+import { EntityTable, ActiveBadge, RowActions, useToggleActive, ActiveStatusField, DeleteConfirmDialog, Field, FormActions, inputCls, catalogDialogCls, catalogOverlayCls, useEntityDialog, useEntityTableData, cellPrimaryCls, cellMutedCls, cellCls } from './shared';
 
 export default function DoctorSchedulesTab() {
   const {
@@ -242,7 +242,7 @@ function ScheduleDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`${catalogDialogCls} max-w-lg max-h-[90vh] overflow-y-auto`} overlayClassName={catalogOverlayCls}>
         <DialogHeader><DialogTitle>{form.id ? 'Sửa lịch làm việc' : 'Thêm lịch làm việc'}</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <Field label="Bác sĩ *">
@@ -280,10 +280,10 @@ function ScheduleDialog({
                   key={d}
                   type="button"
                   onClick={() => toggleDay(d)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-bold border transition-colors ${
+                  className={`cursor-pointer rounded-[15px] border px-3 py-1.5 text-xs transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C41740]/40 ${
                     form.work_days.includes(d)
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-background text-foreground border-muted-foreground/30 hover:border-primary'
+                      ? 'border-[#F3C9D3] bg-[#FCEBEF] font-semibold text-[#C41740]'
+                      : 'border-[#E1DDDA] bg-white font-medium text-[#4A4440] hover:bg-[#FAF9F8]'
                   }`}
                 >
                   {DOW_LABELS[d]}

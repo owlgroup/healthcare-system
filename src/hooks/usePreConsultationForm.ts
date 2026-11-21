@@ -67,6 +67,7 @@ export type UsePreConsultationFormReturn = {
   // Actions
   saveDraft: () => Promise<void>;
   submit: () => Promise<SubmitPreConsultationResult | null>;
+  submitWithData: (input: UpdatePreConsultationInput) => Promise<SubmitPreConsultationResult>;
 
   // Status
   loading: boolean;
@@ -336,6 +337,30 @@ export function usePreConsultationForm(
     }
   }, [preConsultationId, isSubmitted, formData, persistPendingChanges]);
 
+  // Saves the given fields and submits in one step; throws so callers never show false success.
+  const submitWithData = useCallback(
+    async (input: UpdatePreConsultationInput): Promise<SubmitPreConsultationResult> => {
+      const id = preConsultationIdRef.current;
+      if (!id) throw new Error('Không tìm thấy phiếu khai báo.');
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current);
+        autoSaveTimer.current = null;
+      }
+      pendingChanges.current = {};
+      setSubmitting(true);
+      try {
+        await updatePreConsultation(id, input);
+        const result = await submitPreConsultation(id);
+        setFormData((prev) => ({ ...prev, ...input }));
+        setIsSubmitted(true);
+        return result;
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [],
+  );
+
   // ─── Step Navigation ─────────────────────────────────────────────────────────
 
   const currentStepIndex = PRE_CONSULTATION_STEPS.indexOf(currentStep);
@@ -393,6 +418,7 @@ export function usePreConsultationForm(
 
     saveDraft,
     submit,
+    submitWithData,
 
     loading,
     saving,

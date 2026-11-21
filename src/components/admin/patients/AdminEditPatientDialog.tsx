@@ -12,6 +12,7 @@ import {
   applyBhytParsedFillEmpty,
   applyCccdParsedFillEmpty,
   checkCccdOcrQuality,
+  checkCccdBackOcrQuality,
   checkBhytOcrQuality,
   type OcrQualityResult,
 } from "@/lib/cccd-ocr";
@@ -258,7 +259,7 @@ export default function AdminEditPatientDialog({ profileId, open, onClose, onSuc
         }
       } else {
         const json = await fetchOcrSingle(file, "cccd", "front");
-        const quality = checkCccdOcrQuality(json);
+        const quality = type === "back" ? checkCccdBackOcrQuality(json) : checkCccdOcrQuality(json);
 
         if (json.parsed && typeof json.parsed === "object") {
           setForm(p => p ? applyCccdParsedFillEmpty(p, json.parsed) : p);

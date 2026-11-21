@@ -1,16 +1,15 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { LogOut, Stethoscope } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMyPatientProfile } from "@/hooks/useMyPatientProfile";
-import { portalLogout } from "@/lib/portal-auth-api";
-import { loginPathForRole } from "@/lib/portal-auth";
 import { toast } from "sonner";
+import { usePortalLogout } from "@/hooks/use-portal-logout";
 import { isPatientMenuActive, PATIENT_MENU_GROUPS } from "@/config/patient-menu";
 
 const Sidebar = () => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { session, role } = useAuth();
+  const { session } = useAuth();
+  const handleLogout = usePortalLogout();
   const { data: profile } = useMyPatientProfile();
 
   const displayName =
@@ -27,16 +26,6 @@ const Sidebar = () => {
     .toUpperCase();
 
   const email = session?.user?.email ?? "";
-
-  async function handleLogout() {
-    try {
-      await portalLogout();
-      toast.success("Đã đăng xuất");
-      navigate(loginPathForRole(role), { replace: true });
-    } catch {
-      toast.error("Không thể đăng xuất");
-    }
-  }
 
   return (
     <aside className="hidden lg:flex w-[280px] flex-col bg-white border-r border-slate-200 fixed top-0 left-0 h-full z-30">

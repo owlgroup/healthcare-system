@@ -19,7 +19,6 @@ export const RECORD_DIALOG_CLASS =
 const STATUS_META: Record<PatientProfileStatus, { label: string; className: string }> = {
   ACTIVE: { label: "Đang hoạt động", className: "bg-[#E9F7EE] text-[#157F3D]" },
   UNVERIFIED: { label: "Đã nộp", className: "bg-[#EAF0FF] text-[#1D4FD8]" },
-  DRAFT: { label: "Bản nháp", className: "bg-[#FFF4DD] text-[#A65F00]" },
   INACTIVE: { label: "Ngừng hoạt động", className: "bg-[#F0EEEC] text-[#57524E]" },
   REJECTED: { label: "Đã từ chối", className: "bg-[#FCEBEF] text-primary" },
 };
